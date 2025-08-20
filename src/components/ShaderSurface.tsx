@@ -58,7 +58,16 @@ export default function ShaderSurface() {
     ro.observe(canvas);
     roRef.current = ro;
 
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'p' || e.key === 'P') {
+        pipelineRef.current?.toggleAscii();
+        console.log('[ascii] enabled =', pipelineRef.current?.isAsciiEnabled());
+      }
+    };
+    window.addEventListener('keydown', onKey);
+
     return () => {
+      window.removeEventListener('keydown', onKey);
       cancelAnimationFrame(raf);
       ro.disconnect();
       pipeline.dispose();

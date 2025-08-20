@@ -4,6 +4,9 @@ import type { Layer, BlendMode } from './types';
 import { TorusSceneLayer } from './layers/TorusSceneLayer';
 import { CubeSceneLayer } from './layers/CubeSceneLayer';
 import { PublicVideoLayer } from './layers/PublicVideoLayer';
+import { ASCII_FINAL_FRAG } from './shaders/finalAscii';
+import { PASSTHROUGH_FINAL_FRAG } from './shaders/finalPassthrough';
+import { makeAsciiAtlas } from './asciiAtlas';
 
 // full screen quad helper
 class FullscreenQuad {
@@ -100,6 +103,8 @@ class FinalPass {
     });
     this.quad = new FullscreenQuad(this.material);
   }
+  get uniforms() { return this.material.uniforms as Record<string, any>; }
+
   setInput(tex: THREE.Texture) { this.material.uniforms.uInput.value = tex; }
   setResolution(w: number, h: number) { this.material.uniforms.uResolution.value.set(w, h); }
   setTime(t: number) { this.material.uniforms.uTime.value = t; }
@@ -180,6 +185,10 @@ export interface Pipeline {
   update(time: number, dt: number): void;
   render(target: THREE.WebGLRenderTarget | null): void;
   dispose(): void;
+
+  setAsciiEnabled(on: boolean): void;
+  toggleAscii(): void;
+  isAsciiEnabled(): boolean;
 }
 
 export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
@@ -188,42 +197,66 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
 
   const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
   const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
-  const video = new PublicVideoLayer('video-layer', renderer, '/overlay.mp4'); video.zIndex = 3; video.opacity = 1.0; video.blendMode = 'screen';
-  const flag = new PublicVideoLayer('video-layer', renderer, '/test_1.mp4'); video.zIndex = 3; video.opacity = 1.0;;
-  layers.push(flag);
 
-  const finalShader = /* glsl */`
-    #ifdef GL_ES
-    precision mediump float;
-    #endif
-    
-    varying vec2 vUv;
-    uniform sampler2D uInput;
-    uniform vec2  uResolution;
-    uniform float uTime;
-    
-    void main() {
-      gl_FragColor = texture2D(uInput, vUv); // keep alpha from compositor
-    }
-  `;
-  const finalPass = new FinalPass(finalShader);
+  const flag = new PublicVideoLayer('flag', renderer, '/test_1.mp4');
+  flag.zIndex = 4;
+  flag.opacity = 1;
+  flag.blendMode = 'normal';
+  
+  // const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/backgroundflags.mp4');
+  // backgroundFlag.zIndex = 3;
+  // backgroundFlag.opacity = 1.0;
+  // backgroundFlag.blendMode = 'normal'; 
+  // backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
+  
+  layers.push(flag, );
+
+  const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
+  const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
+  let asciiEnabled = true; 
+
+  const chars = " .'`^\",:;Il!i~+_-?][}{1)(|\\/*tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+  const atlas = makeAsciiAtlas(chars, 48, "700 40px 'Courier New', monospace");
+  
+  asciiPass.uniforms.uAtlas = { value: atlas.texture };
+  asciiPass.uniforms.uAtlasGrid = { value: new THREE.Vector2(atlas.cols, atlas.rows) };
+  asciiPass.uniforms.uCharCount = { value: atlas.count };
+  asciiPass.uniforms.uCellPx = { value: new THREE.Vector2(10.0, 18.0) }; 
+  asciiPass.uniforms.uDrawBackground = { value: true };        // ← no background fill
+  asciiPass.uniforms.uAlphaCutoff = { value: 0.03 }; 
+  
+  asciiPass.uniforms.uUseColor = { value: true };
+  asciiPass.uniforms.uTextColor = { value: new THREE.Color(0x000000) };
+  asciiPass.uniforms.uBgColor = { value: new THREE.Color(0xffffff) };
 
   return {
-    resize(spec: FrameSpec) {
+    resize(spec) {
       compositor.resize(spec);
-      for (const l of layers) { if ((l as any).rt) l.resize(spec); else l.init(spec); }
-      finalPass.setResolution(spec.pxW, spec.pxH);
+      for (const l of layers) { (l as any).rt ? l.resize(spec) : l.init(spec); }
+      asciiPass.setResolution(spec.pxW, spec.pxH);
+      plainPass.setResolution(spec.pxW, spec.pxH);
     },
-    update(time: number, dt: number) {
+    update(time, dt) {
       for (const l of layers) l.update(time, dt);
-      finalPass.setTime(time);
+      asciiPass.setTime(time);
+      plainPass.setTime(time);
     },
-    render(target: THREE.WebGLRenderTarget | null) {
+    render(target) {
       const compositeTex = compositor.composite(layers);
-      finalPass.setInput(compositeTex);
-      finalPass.render(renderer, target);
+      if (asciiEnabled) {
+        asciiPass.setInput(compositeTex);
+        asciiPass.render(renderer, target);
+      } else {
+        plainPass.setInput(compositeTex);
+        plainPass.render(renderer, target);
+      }
     },
-    dispose() { for (const l of layers) l.dispose(); }
+    dispose() {
+      for (const l of layers) l.dispose();
+    },
+    setAsciiEnabled(on: boolean) { asciiEnabled = on; },
+    toggleAscii() { asciiEnabled = !asciiEnabled; },
+    isAsciiEnabled() { return asciiEnabled; },
   };
 }
 

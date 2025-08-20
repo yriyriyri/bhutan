@@ -4,10 +4,7 @@ import type { Layer } from '../types';
 import type { BlendMode } from '../types';
 
 
-/**
- * Fullscreen video → RenderTarget layer (object-fit: cover).
- * Create with a concrete URL; no abstract src() anymore.
- */
+//full screen vid  to render target layer for pipeline
 export class BaseVideoLayer implements Layer {
   id: string;
   visible = true;
@@ -38,9 +35,7 @@ export class BaseVideoLayer implements Layer {
     this.makeQuad();
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Setup
-  // ────────────────────────────────────────────────────────────────────────────
+  //setup
   protected makeVideoElement(url: string) {
     const v = document.createElement('video');
     v.src = url;
@@ -49,7 +44,7 @@ export class BaseVideoLayer implements Layer {
     v.muted = true;
     v.autoplay = true;
     v.playsInline = true;
-    v.setAttribute('playsinline', ''); // iOS/Safari quirk
+    v.setAttribute('playsinline', ''); // ios specific
     v.preload = 'auto';
 
     v.addEventListener('loadedmetadata', () => {
@@ -60,7 +55,7 @@ export class BaseVideoLayer implements Layer {
 
     v.addEventListener('canplay', () => {
       const p = v.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {/* user gesture may be required on some browsers */});
+      if (p && typeof p.catch === 'function') p.catch(() => {/* user gesture mayb required on some browsers */});
     });
 
     v.addEventListener('error', (e) => {
@@ -83,43 +78,73 @@ export class BaseVideoLayer implements Layer {
   protected makeQuad() {
     const FULLSCREEN_VERT = /* glsl */`
       varying vec2 vUv;
-      void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+      void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }
     `;
+  
+    // uKeyMode: 0 = off, 1 = black key (black→transparent), 2 = white key (white→transparent)
     const VIDEO_FRAG = /* glsl */`
       varying vec2 vUv;
       uniform sampler2D uVideo;
-      uniform vec2 uUVScale;
-      uniform vec2 uUVOffset;
+      uniform vec2  uUVScale;
+      uniform vec2  uUVOffset;
       uniform float uOpacity;
-      void main() {
-        vec2 uv = uUVOffset + vUv * uUVScale;
-        uv = clamp(uv, 0.0, 1.0);
+  
+      uniform int   uKeyMode;
+      uniform float uKeyLow;
+      uniform float uKeyHigh;
+      uniform bool  uPremultiply;
+  
+      float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+  
+      void main(){
+        vec2 uv = clamp(uUVOffset + vUv * uUVScale, 0.0, 1.0);
         vec4 c = texture2D(uVideo, uv);
-        gl_FragColor = vec4(c.rgb, c.a * uOpacity);
+  
+        float a = 1.0;
+  
+        if (uKeyMode == 1) {
+          // black key
+          float Y = luma(c.rgb);
+          a = smoothstep(uKeyLow, uKeyHigh, Y);
+        } else if (uKeyMode == 2) {
+          // white key
+          float Y = luma(c.rgb);
+          a = 1.0 - smoothstep(uKeyLow, uKeyHigh, Y);
+        }
+  
+        a *= uOpacity;
+  
+        if (uPremultiply) {
+          gl_FragColor = vec4(c.rgb * a, a);
+        } else {
+          gl_FragColor = vec4(c.rgb, a);
+        }
       }
     `;
-
+  
     const mat = new THREE.ShaderMaterial({
       vertexShader: FULLSCREEN_VERT,
       fragmentShader: VIDEO_FRAG,
       uniforms: {
-        uVideo:    { value: this.videoTex },
-        uUVScale:  { value: this.uUVScale },
-        uUVOffset: { value: this.uUVOffset },
-        uOpacity:  { value: this.opacity },
+        uVideo:       { value: this.videoTex },
+        uUVScale:     { value: this.uUVScale },
+        uUVOffset:    { value: this.uUVOffset },
+        uOpacity:     { value: this.opacity },
+        uKeyMode:     { value: 0 },       // off by default
+        uKeyLow:      { value: 0.02 },    // soft threshold start
+        uKeyHigh:     { value: 0.10 },    // soft threshold end
+        uPremultiply: { value: false },   // compositor uses straight alpha
       },
       depthTest: false,
       depthWrite: false,
       transparent: true,
     });
-
+  
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
     this.scene.add(this.quad);
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Lifecycle
-  // ────────────────────────────────────────────────────────────────────────────
+  //lifecycle
   init(spec: FrameSpec) {
     this.rt = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, {
       depthBuffer: false,
@@ -162,9 +187,7 @@ export class BaseVideoLayer implements Layer {
     }
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Fit math (CSS object-fit: cover)
-  // ────────────────────────────────────────────────────────────────────────────
+  //fit math
   protected updateCoverUV(targetPxW?: number, targetPxH?: number) {
     if (!this.videoW || !this.videoH) return;
 
@@ -189,5 +212,25 @@ export class BaseVideoLayer implements Layer {
 
     this.uUVScale.set(uvScaleX, uvScaleY);
     this.uUVOffset.set((1.0 - uvScaleX) * 0.5, (1.0 - uvScaleY) * 0.5);
+  }
+
+  public setWhiteKey(opts: { low?: number; high?: number; premultiply?: boolean } = {}) {
+    const u = (this.quad.material as THREE.ShaderMaterial).uniforms;
+    u.uKeyMode.value = 2; // white key
+    if (opts.low  !== undefined) u.uKeyLow.value  = opts.low;
+    if (opts.high !== undefined) u.uKeyHigh.value = opts.high;
+    if (opts.premultiply !== undefined) u.uPremultiply.value = opts.premultiply;
+  }
+  
+  public setBlackKey(opts: { low?: number; high?: number; premultiply?: boolean } = {}) {
+    const u = (this.quad.material as THREE.ShaderMaterial).uniforms;
+    u.uKeyMode.value = 1; // black key
+    if (opts.low  !== undefined) u.uKeyLow.value  = opts.low;
+    if (opts.high !== undefined) u.uKeyHigh.value = opts.high;
+    if (opts.premultiply !== undefined) u.uPremultiply.value = opts.premultiply;
+  }
+  
+  public clearKey() {
+    (this.quad.material as THREE.ShaderMaterial).uniforms.uKeyMode.value = 0;
   }
 }
