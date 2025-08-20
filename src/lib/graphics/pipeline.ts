@@ -118,202 +118,253 @@ function modeToInt(m: BlendMode): number {
   switch (m) { case 'add': return 1; case 'multiply': return 2; case 'screen': return 3; default: return 0; }
 }
 
-const TRAIL_UPDATE_FRAG = /* glsl */`
-  varying vec2 vUv;
-  uniform sampler2D uPrevTrail;
-  uniform sampler2D uCurr;
-  uniform float uDecay;
-  uniform float uInject;
-  uniform vec3  uTint;
-  uniform float uTintStrength;
 
-  float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+class CompositeHistory {
+  private buf: { rt: THREE.WebGLRenderTarget; t: number }[] = [];
+  private capacity = 0;
+  private next = 0;
+  private acc = 0;
 
-  void main() {
-    vec4 prev = texture2D(uPrevTrail, vUv);
+  // knobs
+  private scale = 0.5; 
+  private captureFPS = 60; 
+  private maxDelaySec: number;
 
-    vec3 prevRGB = mix(prev.rgb, prev.rgb * uTint, clamp(uTintStrength, 0.0, 1.0));
-    vec4 faded   = vec4(prevRGB, prev.a) * clamp(uDecay, 0.0, 0.9999);
+  private copyMat = new THREE.ShaderMaterial({
+    vertexShader: FULLSCREEN_VERT,
+    fragmentShader: /* glsl */`
+      varying vec2 vUv; uniform sampler2D uTex;
+      void main(){ gl_FragColor = texture2D(uTex, vUv); }
+    `,
+    uniforms: { uTex: { value: null } },
+    depthTest: false, depthWrite: false, transparent: false, toneMapped: false
+  });
+  private copyQuad = new FullscreenQuad(this.copyMat);
 
-    vec4 curr = texture2D(uCurr, vUv);
-
-    float currA = luma(curr.rgb);
-    vec4 injected = vec4(curr.rgb, currA) * clamp(uInject, 0.0, 1.0);
-
-    gl_FragColor = faded + injected;
-  }
-`;
-
-const ECHO_COMPOSE_FRAG = /* glsl */`
-  varying vec2 vUv;
-  uniform sampler2D uBase;
-  uniform sampler2D uTrail;
-  uniform int uMode; 
-  uniform bool uForceOpaque; 
-
-  float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
-  vec3 screen(vec3 a, vec3 b) { return 1.0 - (1.0 - a) * (1.0 - b); }
-
-  void main() {
-    vec4 base  = texture2D(uBase,  vUv);
-    vec4 trail = texture2D(uTrail, vUv);
-
-    float trailA = max(trail.a, luma(trail.rgb)); 
-
-    vec3 rgb;
-    if (uMode == 1) {
-      rgb = screen(base.rgb, trail.rgb);
-    } else if (uMode == 2) {
-      rgb = mix(trail.rgb, base.rgb, clamp(base.a, 0.0, 1.0));
-    } else {
-      rgb = clamp(base.rgb + trail.rgb, 0.0, 1.0);
-    }
-
-    float a = uForceOpaque ? 1.0 : max(base.a, trailA);
-    gl_FragColor = vec4(rgb, a);
-  }
-`;
-
-class EchoPass {
-  private updateMat: THREE.ShaderMaterial;
-  private composeMat: THREE.ShaderMaterial;
-  private quad: FullscreenQuad;
-
-  private trailA!: THREE.WebGLRenderTarget;
-  private trailB!: THREE.WebGLRenderTarget;
-  private trailRead!: THREE.WebGLRenderTarget;
-  private trailWrite!: THREE.WebGLRenderTarget;
-
-  private outRT!: THREE.WebGLRenderTarget;
-
-  private elapsedSinceInject = 0;
-
-  private params = {
-    cadenceSec: 1.0,
-    targetAfter1Sec: 0.5, 
-    tint: new THREE.Color(0xffffff),
-    tintStrength: 0.0,
-    composeMode: 2 as 0|1|2,
-    forceOpaque: false, 
-  };
-
-  constructor() {
-    this.updateMat = new THREE.ShaderMaterial({
-      vertexShader: FULLSCREEN_VERT,
-      fragmentShader: TRAIL_UPDATE_FRAG,
-      uniforms: {
-        uPrevTrail:    { value: null },
-        uCurr:         { value: null },
-        uDecay:        { value: 0.9 },
-        uInject:       { value: 1.0 },
-        uTint:         { value: this.params.tint.clone() },
-        uTintStrength: { value: this.params.tintStrength },
-      },
-      transparent: false, depthTest: false, depthWrite: false, toneMapped: false
-    });
-
-    this.composeMat = new THREE.ShaderMaterial({
-      vertexShader: FULLSCREEN_VERT,
-      fragmentShader: ECHO_COMPOSE_FRAG,
-      uniforms: {
-        uBase:        { value: null },
-        uTrail:       { value: null },
-        uMode:        { value: this.params.composeMode },
-        uForceOpaque: { value: this.params.forceOpaque },
-      },
-      transparent: false, depthTest: false, depthWrite: false, toneMapped: false
-    });
-
-    this.quad = new FullscreenQuad(this.updateMat);
+  constructor(maxDelaySec = 3.0, opts?: { scale?: number; captureFPS?: number }) {
+    this.maxDelaySec = Math.max(0.5, maxDelaySec);
+    if (opts?.scale !== undefined)      this.scale      = THREE.MathUtils.clamp(opts.scale, 0.25, 1.0);
+    if (opts?.captureFPS !== undefined) this.captureFPS = Math.max(8, Math.min(60, Math.round(opts.captureFPS)));
   }
 
   resize(spec: FrameSpec, renderer: THREE.WebGLRenderer) {
-    this.trailA?.dispose(); this.trailB?.dispose();
-    this.outRT?.dispose();
+    for (const f of this.buf) f.rt.dispose();
+    this.buf.length = 0;
+    this.capacity = Math.ceil(this.maxDelaySec * this.captureFPS) + 4;
+    this.next = 0;
+    this.acc = 0;
 
+    const w = Math.max(1, Math.round(spec.pxW * this.scale));
+    const h = Math.max(1, Math.round(spec.pxH * this.scale));
     const opts: THREE.RenderTargetOptions = { depthBuffer: false, stencilBuffer: false, generateMipmaps: false };
-    this.trailA = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, opts);
-    this.trailB = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, opts);
-    this.outRT  = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, opts);
+
+    const pr = renderer.getPixelRatio();
+    for (let i = 0; i < this.capacity; i++) {
+      const rt = new THREE.WebGLRenderTarget(w, h, opts);
+      renderer.setRenderTarget(rt);
+      renderer.setScissorTest(false);
+      renderer.setViewport(0, 0, w / pr, h / pr);
+      renderer.clear(true, true, true);
+      this.buf.push({ rt, t: -1e9 });
+    }
+  }
+
+  capture(renderer: THREE.WebGLRenderer, compositeTex: THREE.Texture, nowSec: number, dtSec: number) {
+    this.acc += dtSec;
+    const interval = 1 / this.captureFPS;
+    while (this.acc >= interval) {
+      this.acc -= interval;
+      (this.copyMat.uniforms.uTex.value as any) = compositeTex;
+      this.copyQuad.setMaterial(this.copyMat);
+      const slot = this.buf[this.next];
+      this.copyQuad.render(renderer, slot.rt);
+      slot.t = nowSec;
+      this.next = (this.next + 1) % this.capacity;
+    }
+  }
+
+  sample(nowSec: number, delaySec: number): { A: THREE.Texture; B: THREE.Texture; t: number } {
+    const target = nowSec - delaySec;
+
+    let A = -1, B = -1, At = -1e9, Bt = 1e9;
+    for (let i = 0; i < this.capacity; i++) {
+      const ti = this.buf[i].t;
+      if (ti <= target && ti > At) { At = ti; A = i; }
+      if (ti >= target && ti < Bt) { Bt = ti; B = i; }
+    }
+
+    if (A === -1 && B === -1) {
+      const tex = this.buf[0].rt.texture;
+      return { A: tex, B: tex, t: 0.0 };
+    }
+    if (A === -1) {
+      const tex = this.buf[B].rt.texture;
+      return { A: tex, B: tex, t: 0.0 };
+    }
+    if (B === -1) {
+      const tex = this.buf[A].rt.texture;
+      return { A: tex, B: tex, t: 0.0 };
+    }
+
+    const Atex = this.buf[A].rt.texture;
+    const Btex = this.buf[B].rt.texture;
+    const denom = Math.max(1e-6, (Bt - At));
+    const t = THREE.MathUtils.clamp((target - At) / denom, 0, 1);
+    return { A: Atex, B: Btex, t };
+  }
+
+  dispose(){ for (const f of this.buf) f.rt.dispose(); this.buf.length = 0; }
+}
+
+
+const ECHO_DELAYED_FULL_FRAG = /* glsl */`
+  varying vec2 vUv;
+
+  uniform sampler2D uNow;
+
+  // delayed 3
+  uniform sampler2D u3A; uniform sampler2D u3B; uniform float u3t; uniform float u3w; uniform float u3s;
+  // delayed 2
+  uniform sampler2D u2A; uniform sampler2D u2B; uniform float u2t; uniform float u2w; uniform float u2s;
+  // delayed 1
+  uniform sampler2D u1A; uniform sampler2D u1B; uniform float u1t; uniform float u1w; uniform float u1s;
+
+  uniform bool uUseLumaAlpha;
+  uniform bool uForceOpaque;
+
+  uniform vec2 uCenter;
+
+  float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+  float alphaFor(vec4 c, bool useLuma){
+    return useLuma ? max(c.a, luma(c.rgb)) : c.a;
+  }
+
+  vec4 over(vec4 dst, vec4 src, bool useLuma){
+    float sa = alphaFor(src, useLuma);
+    vec3  rgb = src.rgb + (1.0 - sa) * dst.rgb;
+    float a   = sa      + (1.0 - sa) * dst.a;
+    return vec4(rgb, a);
+  }
+
+  vec3 brightenToWhite(vec3 c, float w){
+    w = clamp(w, 0.0, 1.0);
+    return mix(c, vec3(1.0), w);
+  }
+
+  vec4 sampleScaled(sampler2D tex, float scale){
+    float s = max(scale, 1e-6);
+    vec2 uv = (vUv - uCenter) / s + uCenter;
+
+    vec2 in0 = step(vec2(0.0), uv);
+    vec2 in1 = step(uv, vec2(1.0));
+    float inside = in0.x * in0.y * in1.x * in1.y;
+
+    vec4 c = texture2D(tex, uv);
+    return c * inside;
+  }
+
+  void main(){
+    vec4 acc = vec4(0.0);
+
+    vec4 d3 = mix(sampleScaled(u3A, u3s), sampleScaled(u3B, u3s), u3t);
+    d3.rgb = brightenToWhite(d3.rgb, u3w);
+
+    vec4 d2 = mix(sampleScaled(u2A, u2s), sampleScaled(u2B, u2s), u2t);
+    d2.rgb = brightenToWhite(d2.rgb, u2w);
+
+    vec4 d1 = mix(sampleScaled(u1A, u1s), sampleScaled(u1B, u1s), u1t);
+    d1.rgb = brightenToWhite(d1.rgb, u1w);
+
+    vec4 now = texture2D(uNow, vUv);
+
+    // back to front
+    acc = over(acc, d3, uUseLumaAlpha);
+    acc = over(acc, d2, uUseLumaAlpha);
+    acc = over(acc, d1, uUseLumaAlpha);
+    acc = over(acc, now, false);
+
+    if (uForceOpaque) acc.a = 1.0;
+    gl_FragColor = acc;
+  }
+`;
+
+class FullCompositeEchoPass {
+  private mat: THREE.ShaderMaterial;
+  private quad: FullscreenQuad;
+  private outRT!: THREE.WebGLRenderTarget;
+
+  constructor() {
+    this.mat = new THREE.ShaderMaterial({
+      vertexShader: FULLSCREEN_VERT,
+      fragmentShader: ECHO_DELAYED_FULL_FRAG,
+      uniforms: {
+        uNow: { value: null },
+
+        u3A: { value: null }, u3B: { value: null }, u3t: { value: 0.0 }, u3w: { value: 0.9 }, u3s: { value: 1.02 },
+        u2A: { value: null }, u2B: { value: null }, u2t: { value: 0.0 }, u2w: { value: 0.7 }, u2s: { value: 1.04 },
+        u1A: { value: null }, u1B: { value: null }, u1t: { value: 0.0 }, u1w: { value: 0.5 }, u1s: { value: 1.06 },
+
+        uUseLumaAlpha: { value: true },
+        uForceOpaque:  { value: false },
+
+        uCenter: { value: new THREE.Vector2(0.5, 0.5) }, // scale pivot
+      },
+      transparent: false, depthTest: false, depthWrite: false, toneMapped: false
+    });
+    this.quad = new FullscreenQuad(this.mat);
+  }
+
+  resize(spec: FrameSpec, renderer: THREE.WebGLRenderer) {
+    this.outRT?.dispose();
+    const opts: THREE.RenderTargetOptions = { depthBuffer: false, stencilBuffer: false, generateMipmaps: false };
+    this.outRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, opts);
 
     const pr = renderer.getPixelRatio();
     renderer.setScissorTest(false);
-
-    renderer.setRenderTarget(this.trailA);
-    renderer.setViewport(0, 0, this.trailA.width / pr, this.trailA.height / pr);
-    renderer.clear(true, true, true);
-
-    renderer.setRenderTarget(this.trailB);
-    renderer.setViewport(0, 0, this.trailB.width / pr, this.trailB.height / pr);
-    renderer.clear(true, true, true);
-
     renderer.setRenderTarget(this.outRT);
     renderer.setViewport(0, 0, this.outRT.width / pr, this.outRT.height / pr);
     renderer.clear(true, true, true);
-
-    this.trailRead  = this.trailA;
-    this.trailWrite = this.trailB;
-    this.elapsedSinceInject = 0;
   }
 
-  setParams(p: Partial<{
-    cadenceSec: number;
-    targetAfter1Sec: number;
-    tint: THREE.Color | number | string;
-    tintStrength: number;      // 0..1
-    composeMode: 0|1|2;        // 0=add, 1=screen, 2=baseOverTrail
-    forceOpaque: boolean;
-  }>) {
-    if (p.cadenceSec !== undefined) this.params.cadenceSec = Math.max(0.016, p.cadenceSec);
-    if (p.targetAfter1Sec !== undefined) this.params.targetAfter1Sec = THREE.MathUtils.clamp(p.targetAfter1Sec, 0.0, 1.0);
-    if (p.tint !== undefined) {
-      const c = p.tint instanceof THREE.Color ? p.tint : new THREE.Color(p.tint as any);
-      this.params.tint.copy(c);
-      (this.updateMat.uniforms.uTint.value as THREE.Color).copy(c);
-    }
-    if (p.tintStrength !== undefined) {
-      this.params.tintStrength = THREE.MathUtils.clamp(p.tintStrength, 0, 1);
-      this.updateMat.uniforms.uTintStrength.value = this.params.tintStrength;
-    }
-    if (p.composeMode !== undefined) {
-      this.params.composeMode = p.composeMode;
-      (this.composeMat.uniforms.uMode.value as number) = this.params.composeMode;
-    }
-    if (p.forceOpaque !== undefined) {
-      this.params.forceOpaque = p.forceOpaque;
-      (this.composeMat.uniforms.uForceOpaque.value as boolean) = this.params.forceOpaque;
-    }
+  setWeights(w3: number, w2: number, w1: number){
+    (this.mat.uniforms.u3w.value as number) = w3;
+    (this.mat.uniforms.u2w.value as number) = w2;
+    (this.mat.uniforms.u1w.value as number) = w1;
   }
 
-  process(renderer: THREE.WebGLRenderer, baseTex: THREE.Texture, dtSec: number): THREE.Texture {
-    const decay = Math.pow(this.params.targetAfter1Sec, dtSec / 1.0);
-    (this.updateMat.uniforms.uDecay.value as number) = decay;
+  setScaleWeights(s3: number, s2: number, s1: number){
+    (this.mat.uniforms.u3s.value as number) = Math.max(0.01, s3);
+    (this.mat.uniforms.u2s.value as number) = Math.max(0.01, s2);
+    (this.mat.uniforms.u1s.value as number) = Math.max(0.01, s1);
+  }
 
-    this.composeMat.uniforms.uBase.value  = baseTex;
-    this.composeMat.uniforms.uTrail.value = this.trailRead.texture;
-    this.quad.setMaterial(this.composeMat);
+  setScaleCenter(x: number, y: number){
+    (this.mat.uniforms.uCenter.value as THREE.Vector2).set(x, y);
+  }
+
+  setUseLumaAlpha(on: boolean){ (this.mat.uniforms.uUseLumaAlpha.value as boolean) = on; }
+  setForceOpaque(on: boolean){ (this.mat.uniforms.uForceOpaque.value as boolean) = on; }
+
+  process(
+    renderer: THREE.WebGLRenderer,
+    nowTex: THREE.Texture,
+    s3: { A: THREE.Texture; B: THREE.Texture; t: number },
+    s2: { A: THREE.Texture; B: THREE.Texture; t: number },
+    s1: { A: THREE.Texture; B: THREE.Texture; t: number },
+  ): THREE.Texture {
+    this.mat.uniforms.uNow.value = nowTex;
+
+    this.mat.uniforms.u3A.value = s3.A; this.mat.uniforms.u3B.value = s3.B; (this.mat.uniforms.u3t.value as number) = s3.t;
+    this.mat.uniforms.u2A.value = s2.A; this.mat.uniforms.u2B.value = s2.B; (this.mat.uniforms.u2t.value as number) = s2.t;
+    this.mat.uniforms.u1A.value = s1.A; this.mat.uniforms.u1B.value = s1.B; (this.mat.uniforms.u1t.value as number) = s1.t;
+
+    this.quad.setMaterial(this.mat);
     this.quad.render(renderer, this.outRT);
-
-    this.elapsedSinceInject += dtSec;
-    const inject = (this.elapsedSinceInject >= this.params.cadenceSec) ? 1.0 : 0.0;
-    if (inject > 0.5) this.elapsedSinceInject = 0.0;
-    (this.updateMat.uniforms.uInject.value as number) = inject;
-
-    this.updateMat.uniforms.uPrevTrail.value = this.trailRead.texture;
-    this.updateMat.uniforms.uCurr.value      = baseTex;
-    this.quad.setMaterial(this.updateMat);
-    this.quad.render(renderer, this.trailWrite);
-
-    const tmp = this.trailRead; this.trailRead = this.trailWrite; this.trailWrite = tmp;
-
     return this.outRT.texture;
   }
 
-  dispose() {
-    this.trailA?.dispose();
-    this.trailB?.dispose();
-    this.outRT?.dispose();
-  }
+  dispose(){ this.outRT?.dispose(); }
 }
 
 // pingpong + blend compositor 
@@ -392,8 +443,17 @@ export interface Pipeline {
   setEchoEnabled(off: boolean): void;
   toggleEcho(): void;
   isEchoEnabled(): boolean;
-  setEchoParams(p: Partial<{ persistence: number; holdFrames: number; tint: THREE.Color | number | string; tintStrength: number }>): void;
-}
+  setEchoScaleWeights(s3: number, s2: number, s1: number): void;
+  setEchoParams(p: Partial<{
+    w3: number; w2: number; w1: number;
+  
+    useLumaAlpha: boolean;
+    forceOpaque: boolean;
+  
+    captureFPS: number; 
+    scale: number; 
+    maxDelaySec: number;}>): void;
+  }
 
 export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   const compositor = new Compositor(renderer);
@@ -403,10 +463,17 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
   const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
 
-  // const flag = new PublicVideoLayer('flag', renderer, '/test_1.mp4');
-  // flag.zIndex = 4;
-  // flag.opacity = 1;
-  // flag.blendMode = 'normal';
+  const flag = new PublicVideoLayer('flag', renderer, '/test_1.mp4');
+  flag.zIndex = 4;
+  flag.opacity = 1;
+  flag.blendMode = 'normal';
+  flag.setWhiteKey({ low: 0.98, high: 0.99 });
+
+  const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/backgroundflags.mp4');
+  backgroundFlag.zIndex = 1;
+  backgroundFlag.opacity = 1.0;
+  backgroundFlag.blendMode = 'normal'; 
+  backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
 
   const particles = new PublicVideoLayer('particles', renderer, '/particles.mp4');
   particles.zIndex = 1;
@@ -427,17 +494,11 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     gravity: [1, 0, 0],
     sizeMin: 0.005, sizeMax: 0.05,
     lifeMin: 3, lifeMax: 5,
-    opacity: 0.4,
+    opacity: 0.2,
     minRateBaseline: 0 
   });
   
-  // const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/backgroundflags.mp4');
-  // backgroundFlag.zIndex = 3;
-  // backgroundFlag.opacity = 1.0;
-  // backgroundFlag.blendMode = 'normal'; 
-  // backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
-  
-  layers.push(dragon, particles);
+  layers.push(dragon,flag,backgroundFlag);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
@@ -458,36 +519,49 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   asciiPass.uniforms.uUseColor = { value: true };
   asciiPass.uniforms.uTextColor = { value: new THREE.Color(0x000000) };
   asciiPass.uniforms.uBgColor = { value: new THREE.Color(0xffffff) };
-  const echoPass = new EchoPass();
-  let lastDt = 1/60;
-  let echoEnabled = false;
-  echoPass.setParams({
-    cadenceSec: 1.0, 
-    targetAfter1Sec: 0.5,
-    composeMode: 2,
-    tint: 0xffffff,
-    tintStrength: 0.0,
-  });
 
+  const history  = new CompositeHistory(3.0, { scale: 0.5, captureFPS: 60 });
+  const echoPass = new FullCompositeEchoPass();
+  echoPass.setWeights(0.1, 0.1, 0.6); 
+  echoPass.setScaleWeights(1.06, 1.04, 1.02);
+  echoPass.setUseLumaAlpha(false); 
+
+  let lastDt = 1 / 60;
+  let lastSpec: FrameSpec | null = null;
+
+  let echoEnabled  = true;
 
   return {
     resize(spec) {
+      lastSpec = spec;
       compositor.resize(spec);
+      history.resize(spec, renderer);
       echoPass.resize(spec, renderer);
       for (const l of layers) { (l as any).rt ? l.resize(spec) : l.init(spec); }
       asciiPass.setResolution(spec.pxW, spec.pxH);
       plainPass.setResolution(spec.pxW, spec.pxH);
     },
+
     update(time, dt) {
+      lastDt = dt; 
       for (const l of layers) l.update(time, dt);
       asciiPass.setTime(time);
       plainPass.setTime(time);
     },
+
     render(target) {
       const compositeTex = compositor.composite(layers);
 
+      const nowSec = performance.now() * 0.001;
+      history.capture(renderer, compositeTex, nowSec, lastDt);
+
       const postInput = echoEnabled
-        ? echoPass.process(renderer, compositeTex, lastDt)
+        ? (() => {
+            const s3 = history.sample(nowSec, 0.3);
+            const s2 = history.sample(nowSec, 0.2);
+            const s1 = history.sample(nowSec, 0.1);
+            return echoPass.process(renderer, compositeTex, s3, s2, s1);
+          })()
         : compositeTex;
 
       if (asciiEnabled) {
@@ -498,18 +572,49 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
         plainPass.render(renderer, target);
       }
     },
+
     dispose() {
       for (const l of layers) l.dispose();
       echoPass.dispose();
+      history.dispose();
     },
+
+    // ascii
     setAsciiEnabled(on: boolean) { asciiEnabled = on; },
     toggleAscii() { asciiEnabled = !asciiEnabled; },
     isAsciiEnabled() { return asciiEnabled; },
 
+    // echo
     setEchoEnabled(on: boolean) { echoEnabled = on; },
     toggleEcho() { echoEnabled = !echoEnabled; },
     isEchoEnabled() { return echoEnabled; },
-    setEchoParams(p) { echoPass.setParams(p); },
+
+    setEchoScaleWeights(s3, s2, s1) { echoPass.setScaleWeights(s3, s2, s1); },
+    setEchoParams(p: Partial<{
+      w3: number; w2: number; w1: number;
+      useLumaAlpha: boolean; forceOpaque: boolean;
+      captureFPS: number; scale: number; maxDelaySec: number;
+    }>) {
+      if (p.w3 !== undefined || p.w2 !== undefined || p.w1 !== undefined) {
+        echoPass.setWeights(
+          p.w3 ?? (echoPass as any).mat.uniforms.u3w.value,
+          p.w2 ?? (echoPass as any).mat.uniforms.u2w.value,
+          p.w1 ?? (echoPass as any).mat.uniforms.u1w.value,
+        );
+      }
+      if (p.useLumaAlpha !== undefined) echoPass.setUseLumaAlpha(p.useLumaAlpha);
+      if (p.forceOpaque  !== undefined) echoPass.setForceOpaque(p.forceOpaque);
+
+      if (p.captureFPS !== undefined || p.scale !== undefined || p.maxDelaySec !== undefined) {
+        const newHist = new CompositeHistory(p.maxDelaySec ?? 3.0, {
+          scale: p.scale ?? 0.5,
+          captureFPS: p.captureFPS ?? 24,
+        });
+        history.dispose();
+        (history as any) = newHist; // rebind
+        if (lastSpec) newHist.resize(lastSpec, renderer);
+      }
+    },
   };
 }
 
@@ -534,6 +639,9 @@ const BLEND_FRAG = /* glsl */`
   uniform float uOpacity;
   uniform int uMode; // 0=normal  1=add  2=multiply  3=screen
 
+  vec3 toLinear(vec3 c) { return pow(c, vec3(2.2)); }
+  vec3 toSRGB(vec3 c)   { return pow(c, vec3(1.0/2.2)); }
+
   vec3 blendAdd(vec3 b, vec3 t){ return b + t; }
   vec3 blendMultiply(vec3 b, vec3 t){ return b * t; }
   vec3 blendScreen(vec3 b, vec3 t){ return 1.0 - (1.0 - b) * (1.0 - t); }
@@ -542,16 +650,22 @@ const BLEND_FRAG = /* glsl */`
     vec4 base = texture2D(uBase, vUv);
     vec4 top  = texture2D(uTop,  vUv);
 
+    vec3 bLin = toLinear(base.rgb);
+    vec3 tLin = toLinear(top.rgb);
+
     vec3 blended;
-    if (uMode == 1) blended = blendAdd(base.rgb, top.rgb);
-    else if (uMode == 2) blended = blendMultiply(base.rgb, top.rgb);
-    else if (uMode == 3) blended = blendScreen(base.rgb, top.rgb);
-    else blended = top.rgb; // normal
+    if (uMode == 1)      blended = blendAdd(bLin, tLin);
+    else if (uMode == 2) blended = blendMultiply(bLin, tLin);
+    else if (uMode == 3) blended = blendScreen(bLin, tLin);
+    else                 blended = tLin; // normal uses the "top" color
 
     float a = clamp(top.a * uOpacity, 0.0, 1.0);
-    vec3 rgb = mix(base.rgb, blended, a);
-    float alpha = base.a + a * (1.0 - base.a);
 
-    gl_FragColor = vec4(rgb, alpha);
+    // Straight-alpha OVER in linear
+    vec3 outLin = mix(bLin, blended, a);
+    float outA  = base.a + a * (1.0 - base.a);
+
+    // Back to sRGB-ish output
+    gl_FragColor = vec4(toSRGB(outLin), outA);
   }
 `;

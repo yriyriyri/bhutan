@@ -3,9 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BaseSceneLayer } from './BaseSceneLayer';
 import type { FrameSpec } from '../sizing';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Full-screen quad post: exposure/contrast + outline from alpha
-// ─────────────────────────────────────────────────────────────────────────────
+
 const POST_VERT = /* glsl */`
   varying vec2 vUv;
   void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }
@@ -14,24 +12,22 @@ const POST_VERT = /* glsl */`
 const POST_FRAG = /* glsl */`
   varying vec2 vUv;
   uniform sampler2D uScene;
-  uniform vec2  uResolution;     // drawing-buffer size in pixels
-  uniform float uExposure;       // e.g. 1.0
-  uniform float uContrast;       // e.g. 1.8
-  uniform float uOutlinePx;      // outline width in pixels
-  uniform vec3  uOutlineColor;   // outline RGB
-  uniform float uOutlineOpacity; // 0..1
+  uniform vec2  uResolution; 
+  uniform float uExposure;
+  uniform float uContrast;
+  uniform float uOutlinePx;
+  uniform vec3  uOutlineColor;
+  uniform float uOutlineOpacity;
 
   void main(){
     vec4 src = texture2D(uScene, vUv);
 
-    // exposure/contrast on RGB only
     vec3 rgb = src.rgb * uExposure;
     rgb = (rgb - 0.5) * uContrast + 0.5;
     rgb = clamp(rgb, 0.0, 1.0);
 
     float a = src.a;
 
-    // outline via alpha dilation (screen-space)
     vec2 texel = 1.0 / uResolution;
     float r = max(uOutlinePx, 0.0);
 
@@ -58,14 +54,12 @@ const POST_FRAG = /* glsl */`
   }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Particle point-sprite shaders (round discs; color + size per-point)
-// ─────────────────────────────────────────────────────────────────────────────
+
 const P_VERT = /* glsl */`
-  attribute float aSize;       // approximate world-space size
+  attribute float aSize;
   varying float vAlpha;
   uniform float uOpacity;
-  uniform float uSizeScale;    // pixels per world unit at z=1
+  uniform float uSizeScale; 
 
   void main(){
     vAlpha = uOpacity;
@@ -90,14 +84,10 @@ const P_FRAG = /* glsl */`
   }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DragonSceneLayer with bone-driven particle system (THREE.Points)
-// ─────────────────────────────────────────────────────────────────────────────
 export class DragonSceneLayer extends BaseSceneLayer {
   private mixer?: THREE.AnimationMixer;
   private root?: THREE.Object3D;
 
-  // offscreen scene RT (with depth) → post
   private sceneRT!: THREE.WebGLRenderTarget;
 
   // post chain
@@ -106,42 +96,38 @@ export class DragonSceneLayer extends BaseSceneLayer {
   private postCam!: THREE.OrthographicCamera;
   private postQuad!: THREE.Mesh;
 
-  // ── Particles (Points pool) ────────────────────────────────────────────────
   private points!: THREE.Points;
   private pGeom!: THREE.BufferGeometry;
   private pMat!: THREE.ShaderMaterial;
 
   private MAX_PARTICLES = 12000;
 
-  // CPU particle state
-  private pPos!: Float32Array;   // xyz
-  private pVel!: Float32Array;   // xyz
-  private pLife!: Float32Array;  // seconds remaining
-  private pSize!: Float32Array;  // radius (world units)
-  private pCursor = 0;           // next slot to reuse
+  // cpu particle state
+  private pPos!: Float32Array; 
+  private pVel!: Float32Array; 
+  private pLife!: Float32Array; 
+  private pSize!: Float32Array;  
+  private pCursor = 0;      
 
-  // particle knobs
-  private ratePerBone = 80;       // particles/sec @ speedNormalized=1
-  private speedForMaxRate = 4.0;  // world units/s → speedNormalized=1
-  private inheritFactor = 0.9;    // how much bone velocity to inherit
-  private jitter = 0.6;           // random velocity scaled by speedNormalized
-  private drag = 1.5;             // per-second damping
-  private gravity = new THREE.Vector3(0, -2.0, 0); // world u/s^2
-  private sizeMin = 0.02;         // world units
-  private sizeMax = 0.06;         // world units
-  private lifeMin = 0.35;         // seconds
-  private lifeMax = 1.1;          // seconds
-  private particleOpacity = 1.0;  // global opacity (material)
+  // particle  dials
+  private ratePerBone = 80;       
+  private speedForMaxRate = 4.0;  
+  private inheritFactor = 0.9; 
+  private jitter = 0.6;           
+  private drag = 1.5;  
+  private gravity = new THREE.Vector3(0, -2.0, 0); 
+  private sizeMin = 0.02;  
+  private sizeMax = 0.06;   
+  private lifeMin = 0.35;
+  private lifeMax = 1.1;
+  private particleOpacity = 1.0; 
 
-  // visibility helpers
-  private minRateBaseline = 5;    // ✅ minimal trickle per bone per second (even if speed≈0)
-  private particleColor = new THREE.Color(0x000000); // black; set to magenta for testing
+  private minRateBaseline = 5;
+  private particleColor = new THREE.Color(0x000000); 
 
-  // Bone velocity tracking
   private bones: THREE.Object3D[] = [];
-  private bonePrev!: THREE.Vector3[]; // previous world positions
+  private bonePrev!: THREE.Vector3[]; 
 
-  // logging helpers
   private _spawnedThisFrame = 0;
   private _lastLog = 0;
 
@@ -152,7 +138,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
   ) {
     super(id, renderer);
 
-    // post setup (exposure/contrast + outline)
     this.postMat = new THREE.ShaderMaterial({
       vertexShader: POST_VERT,
       fragmentShader: POST_FRAG,
@@ -175,7 +160,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
     this.postScene.add(this.postQuad);
   }
 
-  // Build: lights, model, animation, bone collection
   protected build(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void {
 
     if (!(this as any).particleColor) this.particleColor = new THREE.Color(0x000000);
@@ -184,13 +168,11 @@ export class DragonSceneLayer extends BaseSceneLayer {
 
     scene.background = null;
 
-    // lighting
     const ambient = new THREE.AmbientLight(0xffffff, 2.0);
     const dir = new THREE.DirectionalLight(0xffffff, 1.5);
     dir.position.set(3, 5, 4);
     scene.add(ambient, dir);
 
-    // ensure particle pool exists before adding
     if (!this.points) this.initParticlePool();
     scene.add(this.points);
 
@@ -200,7 +182,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
       (gltf) => {
         this.root = gltf.scene;
 
-        // recenter horizontally to origin; keep your offsets
         const box = new THREE.Box3().setFromObject(this.root);
         const center = box.getCenter(new THREE.Vector3());
         this.root.position.sub(center);
@@ -217,7 +198,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
           action.play();
         }
 
-        // collect bones AFTER adding to scene (matrices valid)
         this.collectBones(this.root);
       },
       undefined,
@@ -225,11 +205,7 @@ export class DragonSceneLayer extends BaseSceneLayer {
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Particles (Points-based pool)
-  // ───────────────────────────────────────────────────────────────────────────
   private initParticlePool() {
-    // fallbacks in case build() was called before our field initializers ran
     const maxN   = (typeof this.MAX_PARTICLES === 'number' && this.MAX_PARTICLES > 0) ? this.MAX_PARTICLES : 12000;
     const opacity = (typeof this.particleOpacity === 'number') ? this.particleOpacity : 1.0;
     const col     = (this.particleColor instanceof THREE.Color) ? this.particleColor : new THREE.Color(0x000000);
@@ -237,13 +213,13 @@ export class DragonSceneLayer extends BaseSceneLayer {
     this.particleOpacity = opacity;
     this.particleColor   = col;
   
-    // CPU arrays
+    // cpu arrays
     this.pPos  = new Float32Array(maxN * 3);
     this.pVel  = new Float32Array(maxN * 3);
     this.pLife = new Float32Array(maxN);
     this.pSize = new Float32Array(maxN);
   
-    // GPU geometry
+    // gpu geom
     this.pGeom = new THREE.BufferGeometry();
     const posAttr  = new THREE.BufferAttribute(new Float32Array(maxN * 3), 3);
     const sizeAttr = new THREE.BufferAttribute(new Float32Array(maxN), 1);
@@ -259,8 +235,8 @@ export class DragonSceneLayer extends BaseSceneLayer {
       fragmentShader: P_FRAG,
       uniforms: {
         uOpacity:   { value: opacity },
-        uSizeScale: { value: 700.0 },                // refined in resize()
-        uColor:     { value: col.clone() },          // ✅ safe now
+        uSizeScale: { value: 700.0 },
+        uColor:     { value: col.clone() }, 
       },
       transparent: true,
       depthWrite: true,
@@ -328,10 +304,10 @@ export class DragonSceneLayer extends BaseSceneLayer {
   }
 
   private emitFromBone(bone: THREE.Object3D, boneVel: THREE.Vector3, dt: number) {
-    // spawn based on speed + baseline trickle
+    // spawn based on speed 
     const speed = boneVel.length();
-    const speedN = THREE.MathUtils.clamp(speed / this.speedForMaxRate, 0, 1); // 0..1
-    const spawn = (this.ratePerBone * speedN + this.minRateBaseline) * dt;   // ✅ baseline
+    const speedN = THREE.MathUtils.clamp(speed / this.speedForMaxRate, 0, 1);
+    const spawn = (this.ratePerBone * speedN + this.minRateBaseline) * dt;  
     const count = Math.floor(spawn) + (Math.random() < (spawn % 1) ? 1 : 0);
     if (count <= 0) return;
 
@@ -347,20 +323,19 @@ export class DragonSceneLayer extends BaseSceneLayer {
       this.pPos[i*3+1] = pos.y;
       this.pPos[i*3+2] = pos.z;
 
-      // initial velocity: inherit + jitter
+      // initial velocity  inherit + jitter
       const jitterDir = new THREE.Vector3(
         (Math.random()*2-1),
         (Math.random()*2-1),
         (Math.random()*2-1)
       ).normalize();
-      const j = this.jitter * (0.5 + 0.5 * speedN); // give a bit even when slow
+      const j = this.jitter * (0.5 + 0.5 * speedN); 
       const v = new THREE.Vector3().copy(boneVel).multiplyScalar(this.inheritFactor).addScaledVector(jitterDir, j);
 
       this.pVel[i*3+0] = v.x;
       this.pVel[i*3+1] = v.y;
       this.pVel[i*3+2] = v.z;
 
-      // size & life (give some even when slow)
       const t = 0.3 + 0.7 * (speedN * speedN);
       this.pSize[i] = THREE.MathUtils.lerp(this.sizeMin, this.sizeMax, t);
       this.pLife[i] = THREE.MathUtils.lerp(this.lifeMin, this.lifeMax, Math.sqrt(Math.max(0.1, speedN)));
@@ -382,7 +357,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
       let life = this.pLife[i];
       if (life <= 0) continue;
 
-      // integrate velocity with drag + gravity
       let vx = this.pVel[i*3+0];
       let vy = this.pVel[i*3+1];
       let vz = this.pVel[i*3+2];
@@ -396,7 +370,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
       this.pVel[i*3+1] = vy;
       this.pVel[i*3+2] = vz;
 
-      // integrate position
       const px = this.pPos[i*3+0] + vx * dt;
       const py = this.pPos[i*3+1] + vy * dt;
       const pz = this.pPos[i*3+2] + vz * dt;
@@ -405,12 +378,10 @@ export class DragonSceneLayer extends BaseSceneLayer {
       this.pPos[i*3+1] = py;
       this.pPos[i*3+2] = pz;
 
-      // life
       life -= dt;
       this.pLife[i] = life;
       if (life <= 0) continue;
 
-      // write into GPU arrays compacted at [0..alive)
       const d3 = alive * 3;
       (posAttr.array as Float32Array)[d3+0] = px;
       (posAttr.array as Float32Array)[d3+1] = py;
@@ -421,22 +392,17 @@ export class DragonSceneLayer extends BaseSceneLayer {
       alive++;
     }
 
-    // push to GPU
     this.pGeom.setDrawRange(0, alive);
     posAttr.needsUpdate = true;
     sizeAttr.needsUpdate = true;
 
-    // throttle logs (~4/sec)
     const now = performance.now();
     if (now - this._lastLog > 250) {
-      // comment out if noisy
-      // console.log(`[${this.id}] spawned=${this._spawnedThisFrame} alive=${alive}`);
       this._spawnedThisFrame = 0;
       this._lastLog = now;
     }
   }
 
-  // one-shot debug burst to prove visibility independent of bones
   public debugBurst(count = 200) {
     const center = new THREE.Vector3(0, -1.6, -12);
     for (let n = 0; n < count; n++) {
@@ -456,20 +422,17 @@ export class DragonSceneLayer extends BaseSceneLayer {
       this.pVel[i*3+1] = dir.y;
       this.pVel[i*3+2] = dir.z;
 
-      this.pSize[i] = 2.5;          // nice and big
+      this.pSize[i] = 2.5;
       this.pLife[i] = 8.0;
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
   update(_time: number, dt: number): void {
     // advance animation
     this.mixer?.update(dt);
 
-    // ensure world matrices are current for bones
     this.scene.updateMatrixWorld(true);
 
-    // compute bone velocities & emit
     if (this.bones.length > 0) {
       const curr = new THREE.Vector3();
       for (let i = 0; i < this.bones.length; i++) {
@@ -487,15 +450,12 @@ export class DragonSceneLayer extends BaseSceneLayer {
       }
     }
 
-    // integrate particles & update GPU buffers
     this.simParticles(dt);
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
   resize(spec: FrameSpec): void {
     super.resize(spec);
 
-    // offscreen RT for dragon (depth on)
     this.sceneRT?.dispose();
     this.sceneRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, {
       depthBuffer: true,
@@ -504,10 +464,8 @@ export class DragonSceneLayer extends BaseSceneLayer {
       type: THREE.UnsignedByteType,
     });
 
-    // pass resolution for pixel-space outline
     (this.postMat.uniforms.uResolution.value as THREE.Vector2).set(spec.pxW, spec.pxH);
 
-    // update particle size scale based on camera fov + buffer height
     if (this.pMat) {
       const sizeScale = spec.pxH / (2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov * 0.5)));
       this.pMat.uniforms.uSizeScale.value = sizeScale;
@@ -519,7 +477,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
   render(): THREE.WebGLRenderTarget {
     const pr = this.renderer.getPixelRatio();
 
-    // 1) render dragon scene + particles to sceneRT with transparent clear
     const prevCol = new THREE.Color();
     this.renderer.getClearColor(prevCol);
     const prevAlpha = (this.renderer as any).getClearAlpha ? (this.renderer as any).getClearAlpha() : 0;
@@ -532,7 +489,6 @@ export class DragonSceneLayer extends BaseSceneLayer {
     this.renderer.render(this.scene, this.camera);
     this.renderer.setClearColor(prevCol, prevAlpha);
 
-    // 2) post: apply exposure/contrast + outline → this layer RT
     this.postMat.uniforms.uScene.value = this.sceneRT.texture;
 
     this.renderer.setRenderTarget(this.rt);
@@ -549,15 +505,11 @@ export class DragonSceneLayer extends BaseSceneLayer {
     this.sceneRT?.dispose();
     (this.postQuad.geometry as THREE.BufferGeometry).dispose();
     this.postMat.dispose();
-
-    // dispose particle resources
     this.pGeom?.dispose();
     this.pMat?.dispose();
-
     super.dispose();
   }
 
-  // === Public knobs ===
   public setExposure(x: number){ this.postMat.uniforms.uExposure.value = x; }
   public setContrast(x: number){ this.postMat.uniforms.uContrast.value = x; }
   public setOutline(opts: { widthPx?: number; color?: THREE.Color | number | string; opacity?: number }) {
