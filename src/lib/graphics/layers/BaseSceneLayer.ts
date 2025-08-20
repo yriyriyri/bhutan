@@ -15,7 +15,7 @@ export abstract class BaseSceneLayer implements Layer {
   protected renderer: THREE.WebGLRenderer;
   protected rt!: THREE.WebGLRenderTarget;
   protected scene = new THREE.Scene();
-  protected camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+  protected camera = new THREE.PerspectiveCamera(15, 1, 0.1, 100);
 
   constructor(id: string, renderer: THREE.WebGLRenderer) {
     this.id = id;
