@@ -494,7 +494,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     gravity: [1, 0, 0],
     sizeMin: 0.005, sizeMax: 0.03,
     lifeMin: 3, lifeMax: 5,
-    opacity: 0.1,
+    opacity: 0.05,
     minRateBaseline: 0 
   });
   
