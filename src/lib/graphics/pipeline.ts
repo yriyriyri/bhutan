@@ -486,15 +486,15 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   dragon.blendMode = 'normal';
 
   dragon.setParticleParamsExternal({
-    ratePerBone: 3,
+    ratePerBone: 2,
     speedForMaxRate: 30,
     inheritFactor: 1,
     jitter: 0.9,
     drag: 1,
     gravity: [1, 0, 0],
-    sizeMin: 0.005, sizeMax: 0.05,
+    sizeMin: 0.005, sizeMax: 0.03,
     lifeMin: 3, lifeMax: 5,
-    opacity: 0.2,
+    opacity: 0.1,
     minRateBaseline: 0 
   });
   
@@ -520,7 +520,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   asciiPass.uniforms.uTextColor = { value: new THREE.Color(0x000000) };
   asciiPass.uniforms.uBgColor = { value: new THREE.Color(0xffffff) };
 
-  const history  = new CompositeHistory(3.0, { scale: 0.5, captureFPS: 60 });
+  const history  = new CompositeHistory(1, { scale: 0.5, captureFPS: 60 });
   const echoPass = new FullCompositeEchoPass();
   echoPass.setWeights(0.1, 0.1, 0.6); 
   echoPass.setScaleWeights(1.06, 1.04, 1.02);
