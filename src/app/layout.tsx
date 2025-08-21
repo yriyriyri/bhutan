@@ -1,14 +1,25 @@
 // app/layout.tsx
-export const metadata = { title: 'btc', description: '...' };
+import './globals.css';
+import Script from 'next/script';
+
+export const metadata = { title: 'Your App' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tibetan:wght@700&display=swap"
-          rel="stylesheet"
-        />
+        <Script id="console-banner" strategy="beforeInteractive">
+          {`(function(){
+            const banner = String.raw\`
+_|_|_|    _|_|_|_|_|    _|_|_| 
+_|    _|      _|      _|       
+_|_|_|        _|      _|       
+_|    _|      _|      _|       
+_|_|_|        _|        _|_|_| 
+\`;
+            console.log('%c' + banner, 'font-family: monospace; line-height:1.1;');
+          })();`}
+        </Script>
       </head>
       <body>{children}</body>
     </html>
