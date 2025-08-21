@@ -6,12 +6,12 @@ import { CubeSceneLayer } from './layers/CubeSceneLayer';
 import { DragonSceneLayer } from './layers/DragonSceneLayer';
 import { PublicVideoLayer } from './layers/PublicVideoLayer';
 import { makeTibetanAsciiAtlas, showAtlasDebug, makeAsciiAtlas } from '@/lib/graphics/asciiAtlas';
-import { FULLSCREEN_VERT } from './shaders/fullscreen';
-import { COPY_FRAG } from './shaders/copy';
-import { BLEND_FRAG } from './shaders/blend';
-import { ECHO_DELAYED_FULL_FRAG } from './shaders/echoDelayed';
-import { ASCII_FINAL_FRAG } from './shaders/finalAscii';
-import { PASSTHROUGH_FINAL_FRAG } from './shaders/finalPassthrough';
+import FULLSCREEN_VERT from './shaders/fullscreen.vert.glsl';
+import COPY_FRAG from './shaders/copy.frag.glsl';
+import BLEND_FRAG from './shaders/blend.frag.glsl';
+import ECHO_DELAYED_FRAG from './shaders/echoDelayed.frag.glsl';
+import ASCII_FINAL_FRAG from './shaders/finalAscii.frag.glsl';
+import PASSTHROUGH_FINAL_FRAG from './shaders/finalPassthrough.frag.glsl';
 
 //helper functions
 
@@ -229,7 +229,7 @@ class FullCompositeEchoPass {
   constructor() {
     this.mat = new THREE.ShaderMaterial({
       vertexShader: FULLSCREEN_VERT,
-      fragmentShader: ECHO_DELAYED_FULL_FRAG,
+      fragmentShader: ECHO_DELAYED_FRAG,
       uniforms: {
         uNow: { value: null },
 
