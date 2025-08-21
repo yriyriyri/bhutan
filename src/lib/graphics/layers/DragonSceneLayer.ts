@@ -2,87 +2,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BaseSceneLayer } from './BaseSceneLayer';
 import type { FrameSpec } from '../sizing';
-
-
-const POST_VERT = /* glsl */`
-  varying vec2 vUv;
-  void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }
-`;
-
-const POST_FRAG = /* glsl */`
-  varying vec2 vUv;
-  uniform sampler2D uScene;
-  uniform vec2  uResolution; 
-  uniform float uExposure;
-  uniform float uContrast;
-  uniform float uOutlinePx;
-  uniform vec3  uOutlineColor;
-  uniform float uOutlineOpacity;
-
-  void main(){
-    vec4 src = texture2D(uScene, vUv);
-
-    vec3 rgb = src.rgb * uExposure;
-    rgb = (rgb - 0.5) * uContrast + 0.5;
-    rgb = clamp(rgb, 0.0, 1.0);
-
-    float a = src.a;
-
-    vec2 texel = 1.0 / uResolution;
-    float r = max(uOutlinePx, 0.0);
-
-    float d = 0.0;
-    d = max(d, texture2D(uScene, vUv + vec2( r,  0.0) * texel).a);
-    d = max(d, texture2D(uScene, vUv + vec2(-r,  0.0) * texel).a);
-    d = max(d, texture2D(uScene, vUv + vec2( 0.0,  r ) * texel).a);
-    d = max(d, texture2D(uScene, vUv + vec2( 0.0, -r ) * texel).a);
-    float rd = r * 0.7071;
-    d = max(d, texture2D(uScene, vUv + vec2( rd,  rd) * texel).a);
-    d = max(d, texture2D(uScene, vUv + vec2(-rd,  rd) * texel).a);
-    d = max(d, texture2D(uScene, vUv + vec2( rd, -rd) * texel).a);
-    d = max(d, texture2D(uScene, vUv + vec2(-rd, -rd) * texel).a);
-
-    float dilated = max(d, a);
-    float outline = clamp(dilated - a, 0.0, 1.0);
-    float oA = outline * uOutlineOpacity;
-
-    if (oA > 0.001 && a < 0.001) {
-      gl_FragColor = vec4(uOutlineColor, oA);
-    } else {
-      gl_FragColor = vec4(rgb, a);
-    }
-  }
-`;
-
-
-const P_VERT = /* glsl */`
-  attribute float aSize;
-  varying float vAlpha;
-  uniform float uOpacity;
-  uniform float uSizeScale; 
-
-  void main(){
-    vAlpha = uOpacity;
-    vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    float dist = max(-mv.z, 0.0001);
-    float sizePx = aSize * uSizeScale / dist;
-    gl_PointSize = sizePx;
-    gl_Position = projectionMatrix * mv;
-  }
-`;
-
-const P_FRAG = /* glsl */`
-  precision mediump float;
-  varying float vAlpha;
-  uniform vec3 uColor;
-
-  void main(){
-    // circular mask
-    vec2 uv = gl_PointCoord * 2.0 - 1.0;
-    if (dot(uv, uv) > 1.0) discard;
-    gl_FragColor = vec4(uColor, vAlpha);
-  }
-`;
+import POST_VERT from '../shaders/ssOutline.vert.glsl'
+import POST_FRAG from '../shaders/ssOutline.frag.glsl'
+import P_VERT from '../shaders/dragonParticles.vert.glsl'
+import P_FRAG from '../shaders/dragonParticles.frag.glsl'
 
 export class DragonSceneLayer extends BaseSceneLayer {
   private mixer?: THREE.AnimationMixer;
@@ -142,20 +65,20 @@ export class DragonSceneLayer extends BaseSceneLayer {
       vertexShader: POST_VERT,
       fragmentShader: POST_FRAG,
       uniforms: {
-        uScene:           { value: null },
-        uResolution:      { value: new THREE.Vector2(1, 1) },
-        uExposure:        { value: 1.0 },
-        uContrast:        { value: 1.8 },
-        uOutlinePx:       { value: 5.0 },
-        uOutlineColor:    { value: new THREE.Color(0x000000) },
-        uOutlineOpacity:  { value: 1.0 },
+        uScene: { value: null },
+        uResolution: { value: new THREE.Vector2(1, 1) },
+        uExposure: { value: 1.0 },
+        uContrast: { value: 1.8 },
+        uOutlinePx: { value: 5.0 },
+        uOutlineColor: { value: new THREE.Color(0x000000) },
+        uOutlineOpacity: { value: 1.0 },
       },
       depthTest: false,
       depthWrite: false,
       transparent: true,
     });
     this.postScene = new THREE.Scene();
-    this.postCam   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.postQuad  = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.postMat);
     this.postScene.add(this.postQuad);
   }
