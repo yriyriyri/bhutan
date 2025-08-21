@@ -1,5 +1,5 @@
 // app/layout.tsx
-export const metadata = { title: 'Bhutan', description: '...' };
+export const metadata = { title: 'btc', description: '...' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
