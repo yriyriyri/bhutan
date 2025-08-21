@@ -5,9 +5,19 @@ import { TorusSceneLayer } from './layers/TorusSceneLayer';
 import { CubeSceneLayer } from './layers/CubeSceneLayer';
 import { DragonSceneLayer } from './layers/DragonSceneLayer';
 import { PublicVideoLayer } from './layers/PublicVideoLayer';
+import { makeTibetanAsciiAtlas, showAtlasDebug, makeAsciiAtlas } from '@/lib/graphics/asciiAtlas';
+import { FULLSCREEN_VERT } from './shaders/fullscreen';
+import { COPY_FRAG } from './shaders/copy';
+import { BLEND_FRAG } from './shaders/blend';
+import { ECHO_DELAYED_FULL_FRAG } from './shaders/echoDelayed';
 import { ASCII_FINAL_FRAG } from './shaders/finalAscii';
 import { PASSTHROUGH_FINAL_FRAG } from './shaders/finalPassthrough';
-import { makeTibetanAsciiAtlas, showAtlasDebug, makeAsciiAtlas } from '@/lib/graphics/asciiAtlas';
+
+//helper functions
+
+function modeToInt(m: BlendMode): number {
+  switch (m) { case 'add': return 1; case 'multiply': return 2; case 'screen': return 3; default: return 0; }
+}
 
 // full screen quad helper
 class FullscreenQuad {
@@ -114,11 +124,6 @@ class FinalPass {
   }
 }
 
-function modeToInt(m: BlendMode): number {
-  switch (m) { case 'add': return 1; case 'multiply': return 2; case 'screen': return 3; default: return 0; }
-}
-
-
 class CompositeHistory {
   private buf: { rt: THREE.WebGLRenderTarget; t: number }[] = [];
   private capacity = 0;
@@ -215,79 +220,6 @@ class CompositeHistory {
 
   dispose(){ for (const f of this.buf) f.rt.dispose(); this.buf.length = 0; }
 }
-
-
-const ECHO_DELAYED_FULL_FRAG = /* glsl */`
-  varying vec2 vUv;
-
-  uniform sampler2D uNow;
-
-  // delayed 3
-  uniform sampler2D u3A; uniform sampler2D u3B; uniform float u3t; uniform float u3w; uniform float u3s;
-  // delayed 2
-  uniform sampler2D u2A; uniform sampler2D u2B; uniform float u2t; uniform float u2w; uniform float u2s;
-  // delayed 1
-  uniform sampler2D u1A; uniform sampler2D u1B; uniform float u1t; uniform float u1w; uniform float u1s;
-
-  uniform bool uUseLumaAlpha;
-  uniform bool uForceOpaque;
-
-  uniform vec2 uCenter;
-
-  float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
-
-  float alphaFor(vec4 c, bool useLuma){
-    return useLuma ? max(c.a, luma(c.rgb)) : c.a;
-  }
-
-  vec4 over(vec4 dst, vec4 src, bool useLuma){
-    float sa = alphaFor(src, useLuma);
-    vec3  rgb = src.rgb + (1.0 - sa) * dst.rgb;
-    float a   = sa      + (1.0 - sa) * dst.a;
-    return vec4(rgb, a);
-  }
-
-  vec3 brightenToWhite(vec3 c, float w){
-    w = clamp(w, 0.0, 1.0);
-    return mix(c, vec3(1.0), w);
-  }
-
-  vec4 sampleScaled(sampler2D tex, float scale){
-    float s = max(scale, 1e-6);
-    vec2 uv = (vUv - uCenter) / s + uCenter;
-
-    vec2 in0 = step(vec2(0.0), uv);
-    vec2 in1 = step(uv, vec2(1.0));
-    float inside = in0.x * in0.y * in1.x * in1.y;
-
-    vec4 c = texture2D(tex, uv);
-    return c * inside;
-  }
-
-  void main(){
-    vec4 acc = vec4(0.0);
-
-    vec4 d3 = mix(sampleScaled(u3A, u3s), sampleScaled(u3B, u3s), u3t);
-    d3.rgb = brightenToWhite(d3.rgb, u3w);
-
-    vec4 d2 = mix(sampleScaled(u2A, u2s), sampleScaled(u2B, u2s), u2t);
-    d2.rgb = brightenToWhite(d2.rgb, u2w);
-
-    vec4 d1 = mix(sampleScaled(u1A, u1s), sampleScaled(u1B, u1s), u1t);
-    d1.rgb = brightenToWhite(d1.rgb, u1w);
-
-    vec4 now = texture2D(uNow, vUv);
-
-    // back to front
-    acc = over(acc, d3, uUseLumaAlpha);
-    acc = over(acc, d2, uUseLumaAlpha);
-    acc = over(acc, d1, uUseLumaAlpha);
-    acc = over(acc, now, false);
-
-    if (uForceOpaque) acc.a = 1.0;
-    gl_FragColor = acc;
-  }
-`;
 
 class FullCompositeEchoPass {
   private mat: THREE.ShaderMaterial;
@@ -617,55 +549,3 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     },
   };
 }
-
-const FULLSCREEN_VERT = /* glsl */`
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = vec4(position, 1.0);
-  }
-`;
-
-const COPY_FRAG = /* glsl */`
-  varying vec2 vUv;
-  uniform sampler2D uTex;
-  void main() { gl_FragColor = texture2D(uTex, vUv); }
-`;
-
-const BLEND_FRAG = /* glsl */`
-  varying vec2 vUv;
-  uniform sampler2D uBase;
-  uniform sampler2D uTop;
-  uniform float uOpacity;
-  uniform int uMode; // 0=normal  1=add  2=multiply  3=screen
-
-  vec3 toLinear(vec3 c) { return pow(c, vec3(2.2)); }
-  vec3 toSRGB(vec3 c)   { return pow(c, vec3(1.0/2.2)); }
-
-  vec3 blendAdd(vec3 b, vec3 t){ return b + t; }
-  vec3 blendMultiply(vec3 b, vec3 t){ return b * t; }
-  vec3 blendScreen(vec3 b, vec3 t){ return 1.0 - (1.0 - b) * (1.0 - t); }
-
-  void main() {
-    vec4 base = texture2D(uBase, vUv);
-    vec4 top  = texture2D(uTop,  vUv);
-
-    vec3 bLin = toLinear(base.rgb);
-    vec3 tLin = toLinear(top.rgb);
-
-    vec3 blended;
-    if (uMode == 1)      blended = blendAdd(bLin, tLin);
-    else if (uMode == 2) blended = blendMultiply(bLin, tLin);
-    else if (uMode == 3) blended = blendScreen(bLin, tLin);
-    else                 blended = tLin; // normal uses the "top" color
-
-    float a = clamp(top.a * uOpacity, 0.0, 1.0);
-
-    // Straight-alpha OVER in linear
-    vec3 outLin = mix(bLin, blended, a);
-    float outA  = base.a + a * (1.0 - base.a);
-
-    // Back to sRGB-ish output
-    gl_FragColor = vec4(toSRGB(outLin), outA);
-  }
-`;
