@@ -2,7 +2,7 @@
 import './globals.css';
 import Script from 'next/script';
 
-export const metadata = { title: 'Your App' };
+export const metadata = { title: 'btc' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
