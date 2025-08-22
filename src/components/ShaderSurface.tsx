@@ -4,8 +4,10 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createPipeline, type Pipeline } from '../lib/graphics/pipeline';
 import { measureFromElement } from '../lib/graphics/sizing';
+import { useShaderScene } from './ShaderSceneContext';
 
 export default function ShaderSurface() {
+  const { showDragon } = useShaderScene();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
@@ -23,9 +25,8 @@ export default function ShaderSurface() {
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.autoClear = false;
-    renderer.setClearColor(0x000000, 0); //transparent clear
+    renderer.setClearColor(0x000000, 0);
 
-    // measure from canvas element  stable when devtools inspect element is triggered
     const spec = measureFromElement(canvas, 1.0, 2);
     renderer.setPixelRatio(spec.dpr);
     renderer.setSize(spec.cssW, spec.cssH, false);
@@ -40,19 +41,17 @@ export default function ShaderSurface() {
       const dt = (t - last) / 1000;
       last = t;
       pipeline.update(t / 1000, dt);
-      pipeline.render(null); // to screen
+      pipeline.render(null);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
 
-    // observe the canvas itself
     const ro = new ResizeObserver(() => {
       const specNow = measureFromElement(canvas, 1.0, 2);
       renderer.setPixelRatio(specNow.dpr);
       renderer.setSize(specNow.cssW, specNow.cssH, false);
       const db = new THREE.Vector2();
       renderer.getDrawingBufferSize(db);
-      console.log('canvas css=', specNow.cssW, 'x', specNow.cssH, ' dpr=', specNow.dpr, ' db=', db.x, 'x', db.y);
       pipeline.resize(specNow);
     });
     ro.observe(canvas);
@@ -77,6 +76,10 @@ export default function ShaderSurface() {
     };
   }, []);
 
+  useEffect(() => {
+    pipelineRef.current?.setLayerVisibility?.('dragon-layer', showDragon);
+  }, [showDragon]);
+
   return (
     <canvas
       ref={canvasRef}
@@ -86,7 +89,7 @@ export default function ShaderSurface() {
         width: '100vw',
         height: '100vh',
         zIndex: 0,
-        pointerEvents: 'none', // let  dom receive input
+        pointerEvents: 'none',
       }}
     />
   );

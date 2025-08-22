@@ -6,6 +6,8 @@ import POST_VERT from '../shaders/ssOutline.vert.glsl'
 import POST_FRAG from '../shaders/ssOutline.frag.glsl'
 import P_VERT from '../shaders/dragonParticles.vert.glsl'
 import P_FRAG from '../shaders/dragonParticles.frag.glsl'
+import { PMREMGenerator } from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export class DragonSceneLayer extends BaseSceneLayer {
   private mixer?: THREE.AnimationMixer;
@@ -83,6 +85,50 @@ export class DragonSceneLayer extends BaseSceneLayer {
     this.postScene.add(this.postQuad);
   }
 
+  //orb 
+
+  private replaceMaterialByName(
+    root: THREE.Object3D,
+    targetName: string,
+    make: (mesh: THREE.Mesh) => THREE.Material
+  ) {
+    const want = targetName.trim().toLowerCase();
+    let replaced = 0;
+
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh || !(mesh as any).isMesh) return;
+
+      const swap = (m: THREE.Material | null | undefined, idx?: number) => {
+        if (!m) return;
+        const name = (m.name || '').trim().toLowerCase();
+        if (name !== want) return;
+
+        const newMat = make(mesh);
+        if ((mesh as any).isSkinnedMesh && 'skinning' in newMat) {
+          (newMat as any).skinning = true;
+        }
+
+        if (Array.isArray(mesh.material)) {
+          mesh.material[idx!] = newMat;
+        } else {
+          mesh.material = newMat;
+        }
+
+        m.dispose();
+        replaced++;
+      };
+
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((m, i) => swap(m, i));
+      } else {
+        swap(mesh.material);
+      }
+    });
+
+    console.log(`[${this.id}] Replaced ${replaced} material(s) named "${targetName}".`);
+  }
+
   protected build(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void {
 
     if (!(this as any).particleColor) this.particleColor = new THREE.Color(0x000000);
@@ -95,6 +141,10 @@ export class DragonSceneLayer extends BaseSceneLayer {
     const dir = new THREE.DirectionalLight(0xffffff, 1.5);
     dir.position.set(3, 5, 4);
     scene.add(ambient, dir);
+
+    const pmrem = new PMREMGenerator(this.renderer);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = envRT.texture;
 
     if (!this.points) this.initParticlePool();
     scene.add(this.points);
@@ -113,6 +163,22 @@ export class DragonSceneLayer extends BaseSceneLayer {
         this.root.position.z -= 12.0;
 
         scene.add(this.root);
+
+        this.replaceMaterialByName(this.root, 'orb', (mesh) => {
+          const mat = new THREE.MeshPhysicalMaterial({
+            name: 'orb_metallic_repl',
+            color: 0xffffff,
+            metalness: 1.0,
+            roughness: 0.05,
+            envMapIntensity: 1.5,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.03,
+            emissive: 0x222222,
+            emissiveIntensity: 0.4,
+          });
+          if ((mesh as any).isSkinnedMesh) (mat as any).skinning = true;
+          return mat;
+        });
 
         if (gltf.animations && gltf.animations.length > 0) {
           this.mixer = new THREE.AnimationMixer(this.root);

@@ -1,6 +1,8 @@
 // app/layout.tsx
 import './globals.css';
 import Script from 'next/script';
+import ShaderSurface from '../components/ShaderSurface';
+import { ShaderSceneProvider } from '../components/ShaderSceneContext';
 
 export const metadata = { title: 'btc' };
 
@@ -21,7 +23,12 @@ _|_|_|        _|        _|_|_|
           })();`}
         </Script>
       </head>
-      <body>{children}</body>
+      <body style={{ margin: 0 }}>
+        <ShaderSceneProvider>
+          <ShaderSurface />
+          {children}
+        </ShaderSceneProvider>
+      </body>
     </html>
   );
 }

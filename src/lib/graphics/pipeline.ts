@@ -385,15 +385,22 @@ export interface Pipeline {
     captureFPS: number; 
     scale: number; 
     maxDelaySec: number;}>): void;
-  }
+
+  setLayers(layers: Layer[]): void;
+  addLayer(layer: Layer): void;
+  removeLayer(id: string): void;
+  clearLayers(): void;
+  getLayers(): readonly Layer[];
+  setLayerVisibility(id: string, visible: boolean): void;
+}
 
 export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   const compositor = new Compositor(renderer);
 
-  const layers: Layer[] = [];
+  let layers: Layer[] = [];
 
-  const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
-  const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
+  // const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
+  // const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
 
   const flag = new PublicVideoLayer('flag', renderer, '/test_1.mp4');
   flag.zIndex = 4;
@@ -408,7 +415,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
 
   const particles = new PublicVideoLayer('particles', renderer, '/particles.mp4');
-  particles.zIndex = 1;
+  particles.zIndex = 0;
   particles.opacity = 1;
   particles.blendMode = 'normal';
 
@@ -430,11 +437,12 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon,flag,backgroundFlag);
+  layers.push(dragon,flag,backgroundFlag, particles);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
   let asciiEnabled = true; 
+  let echoEnabled  = false;
 
   const chars = " .'`^\",:;Il!i~+_-?][}{1)(|\\/*tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
   const atlas = makeAsciiAtlas(chars, 48, "700 40px 'Courier New', monospace");
@@ -461,7 +469,11 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   let lastDt = 1 / 60;
   let lastSpec: FrameSpec | null = null;
 
-  let echoEnabled  = true;
+  const initOrResizeLayer = (l: Layer) => {
+    if (!lastSpec) return; 
+    (l as any).rt ? l.resize(lastSpec) : l.init(lastSpec);
+  };
+  const disposeLayer = (l: Layer) => { try { l.dispose(); } catch {} };
 
   return {
     resize(spec) {
@@ -509,6 +521,39 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       for (const l of layers) l.dispose();
       echoPass.dispose();
       history.dispose();
+    },
+
+    setLayers(newLayers: Layer[]) {
+      layers.forEach(disposeLayer);
+      layers = [...newLayers];
+      layers.forEach(initOrResizeLayer);
+    },
+
+    addLayer(layer: Layer) {
+      layers.push(layer);
+      initOrResizeLayer(layer);
+    },
+
+    removeLayer(id: string) {
+      const idx = layers.findIndex(l => (l as any).id === id);
+      if (idx >= 0) {
+        disposeLayer(layers[idx]);
+        layers.splice(idx, 1);
+      }
+    },
+
+    clearLayers() {
+      layers.forEach(disposeLayer);
+      layers = [];
+    },
+
+    getLayers() {
+      return layers;
+    },
+
+    setLayerVisibility(id: string, visible: boolean) {
+      const l = layers.find(l => (l as any).id === id);
+      if (l) l.visible = visible;
     },
 
     // ascii
