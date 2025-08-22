@@ -419,6 +419,12 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   particles.opacity = 1;
   particles.blendMode = 'normal';
 
+  const flag2 = new PublicVideoLayer('flag2', renderer, '/1080p.mp4');
+  flag.zIndex = 1;
+  flag.opacity = 1;
+  flag.blendMode = 'normal';
+  flag.setWhiteKey({ low: 0.98, high: 0.99 });
+
   const dragon = new DragonSceneLayer('dragon-layer', renderer, '/dragon.glb');
   dragon.zIndex = 2;
   dragon.opacity = 1.0;
@@ -437,7 +443,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon,flag,backgroundFlag, particles);
+  layers.push(dragon, particles, backgroundFlag, flag);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);

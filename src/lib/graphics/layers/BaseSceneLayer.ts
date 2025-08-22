@@ -17,6 +17,9 @@ export abstract class BaseSceneLayer implements Layer {
   protected scene = new THREE.Scene();
   protected camera = new THREE.PerspectiveCamera(15, 1, 0.1, 100);
 
+  protected lastSpec: FrameSpec | null = null;
+  private _hasFramedOnce = false;
+
   constructor(id: string, renderer: THREE.WebGLRenderer) {
     this.id = id;
     this.renderer = renderer;
@@ -37,15 +40,28 @@ export abstract class BaseSceneLayer implements Layer {
       generateMipmaps: false,
       type: THREE.UnsignedByteType,
     });
+    this._hasFramedOnce = false;
+    this.lastSpec = spec;
     this.resize(spec);
   }
 
+  protected refit(fitScale = 1.25) {
+    this.scene.scale.set(1, 1, 1);
+    this.scene.updateMatrixWorld(true);
+    frameScenePerspective(this.camera, this.scene, this.camera.aspect, fitScale);
+    this._hasFramedOnce = true;
+  }
+
   resize(spec: FrameSpec) {
+    this.lastSpec = spec;
+
     this.camera.aspect = spec.pxW / spec.pxH;
     this.camera.updateProjectionMatrix();
 
     // frame and center scene  (immune to aspect changes  such as from mobile etc)
-    frameScenePerspective(this.camera, this.scene, this.camera.aspect, 1.25);
+    if (!this._hasFramedOnce) {
+      this.refit(1.25);
+    }
 
     this.rt.setSize(spec.pxW, spec.pxH);
     console.log(`[${this.id}] aspect=${(spec.pxW/spec.pxH).toFixed(3)} rt=${this.rt.width}x${this.rt.height}`);
@@ -53,9 +69,8 @@ export abstract class BaseSceneLayer implements Layer {
 
   render(): THREE.WebGLRenderTarget {
     this.renderer.setRenderTarget(this.rt);
-    const pr = this.renderer.getPixelRatio();
     this.renderer.setScissorTest(false);
-    this.renderer.setViewport(0, 0, this.rt.width / pr, this.rt.height / pr);
+    this.renderer.setViewport(0, 0, this.rt.width, this.rt.height);
     this.renderer.clear(true, true, true);
     this.renderer.render(this.scene, this.camera);
     return this.rt;
