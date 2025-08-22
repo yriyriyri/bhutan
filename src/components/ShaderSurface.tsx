@@ -7,7 +7,8 @@ import { measureFromElement } from '../lib/graphics/sizing';
 import { useShaderScene } from './ShaderSceneContext';
 
 export default function ShaderSurface() {
-  const { showDragon } = useShaderScene();
+  const { showDragon, showFlags, showParticles, showClouds } = useShaderScene();
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
@@ -35,6 +36,13 @@ export default function ShaderSurface() {
     pipelineRef.current = pipeline;
     pipeline.resize(spec);
 
+    pipeline.setLayerVisibility?.('dragon-layer', showDragon);
+    pipeline.setLayerVisibility?.('flag', showFlags);
+    pipeline.setLayerVisibility?.('background-flag', showFlags);
+    pipeline.setLayerVisibility?.('particles', showParticles);
+    pipeline.setLayerVisibility?.('clouds', showClouds);
+    pipeline.setLayerVisibility?.('foreground-clouds', showClouds);
+
     let raf = 0;
     let last = performance.now();
     const loop = (t: number) => {
@@ -50,15 +58,22 @@ export default function ShaderSurface() {
       const specNow = measureFromElement(canvas, 1.0, 2);
       renderer.setPixelRatio(specNow.dpr);
       renderer.setSize(specNow.cssW, specNow.cssH, false);
-      const db = new THREE.Vector2();
-      renderer.getDrawingBufferSize(db);
       pipeline.resize(specNow);
     });
     ro.observe(canvas);
     roRef.current = ro;
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'p' || e.key === 'P') {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      if (typing) return;
+
+      if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
         pipelineRef.current?.toggleAscii();
         console.log('[ascii] enabled =', pipelineRef.current?.isAsciiEnabled());
       }
@@ -74,11 +89,18 @@ export default function ShaderSurface() {
       pipelineRef.current = null;
       roRef.current = null;
     };
-  }, []);
+  }, []); 
 
   useEffect(() => {
-    pipelineRef.current?.setLayerVisibility?.('dragon-layer', showDragon);
-  }, [showDragon]);
+    const p = pipelineRef.current;
+    if (!p) return;
+    p.setLayerVisibility?.('dragon-layer', showDragon);
+    p.setLayerVisibility?.('flag', showFlags);
+    p.setLayerVisibility?.('background-flag', showFlags);
+    p.setLayerVisibility?.('particles', showParticles);
+    p.setLayerVisibility?.('clouds', showClouds);
+    p.setLayerVisibility?.('foreground-clouds', showClouds);
+  }, [showDragon, showFlags, showParticles, showClouds]);
 
   return (
     <canvas

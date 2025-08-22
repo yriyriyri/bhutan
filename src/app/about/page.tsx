@@ -4,27 +4,73 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { useShaderScene } from '../../components/ShaderSceneContext';
 
+import { Roboto_Mono } from 'next/font/google';
+export const mono = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+
 export default function AboutPage() {
-  const { setShowDragon } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
 
   useEffect(() => {
     setShowDragon(false);
-  }, [setShowDragon]);
+    setShowFlags(true);
+    setShowParticles(true);
+    setShowClouds(false);
+  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds]);
 
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
       <Link
-        href="/"
+        href="/menu"
+        className={mono.className}
         style={{
-          position: 'absolute', top: 16, right: 16, zIndex: 10,
-          fontFamily: '"Times New Roman", Times, serif',
-          fontWeight: 400, color: 'transparent', WebkitTextStroke: '0.6px #000',
-          fontSize: 'clamp(28px, 4vw, 72px)', lineHeight: 1.1, letterSpacing: 0.5,
-          textAlign: 'right', textDecoration: 'none', cursor: 'pointer',
+          position: 'absolute',
+          top: 15,
+          left: 15,
+          fontSize: 25,
+          textDecoration: 'none',
+          color: '#000',
+          zIndex: 20,
+          lineHeight: 1,
         }}
       >
-        BHUTAN TREASURY COMPANY
+        {'<'}
       </Link>
+      <div
+        style={{
+          position: 'absolute',
+          right: 150,
+          bottom: 100,
+          width: 400,
+          zIndex: 10,
+          color: '#000',
+          textAlign: 'left',
+        }}
+      >
+        <div
+          className={mono.className}
+          style={{
+            fontSize: 24,
+            lineHeight: 1.2,
+            marginBottom: 8,
+          }}
+        >
+          about
+        </div>
+
+        <p
+          style={{
+            fontFamily: '"Courier New", Courier, monospace',
+            fontSize: 12,
+            lineHeight: 1.35,
+            margin: 0,
+          }}
+        >
+          Lorem Ipsum&nbsp;is simply dummy text of the printing and typesetting
+          industry. Lorem Ipsum has been the industry's standard dummy text ever
+          since the 1500s, when an unknown printer took a galley of type and
+          scrambled it to make a type specimen book.
+        </p>
+      </div>
     </div>
   );
 }

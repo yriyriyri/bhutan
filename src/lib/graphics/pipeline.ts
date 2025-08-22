@@ -402,33 +402,38 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   // const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
   // const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
 
-  const flag = new PublicVideoLayer('flag', renderer, '/test_1.mp4');
+  const flag = new PublicVideoLayer('flag', renderer, '/front.mp4');
   flag.zIndex = 4;
   flag.opacity = 1;
   flag.blendMode = 'normal';
   flag.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/backgroundflags.mp4');
-  backgroundFlag.zIndex = 1;
+  const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/back.mp4');
+  backgroundFlag.zIndex = 2;
   backgroundFlag.opacity = 1.0;
   backgroundFlag.blendMode = 'normal'; 
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
 
   const particles = new PublicVideoLayer('particles', renderer, '/particles.mp4');
-  particles.zIndex = 0;
-  particles.opacity = 1;
+  particles.zIndex = 1;
+  particles.opacity = 1.0;
   particles.blendMode = 'normal';
 
-  const flag2 = new PublicVideoLayer('flag2', renderer, '/1080p.mp4');
-  flag.zIndex = 1;
-  flag.opacity = 1;
-  flag.blendMode = 'normal';
-  flag.setWhiteKey({ low: 0.98, high: 0.99 });
-
   const dragon = new DragonSceneLayer('dragon-layer', renderer, '/dragon.glb');
-  dragon.zIndex = 2;
+  dragon.zIndex = 3;
   dragon.opacity = 1.0;
   dragon.blendMode = 'normal';
+
+  const clouds = new PublicVideoLayer('clouds', renderer, '/13.mp4');
+  clouds.zIndex = 1;
+  clouds.opacity = 1.0;
+  clouds.blendMode = 'normal';
+
+  const foregroundClouds = new PublicVideoLayer('foreground-clouds', renderer, '/bright.mp4');
+  foregroundClouds.zIndex = 4;
+  foregroundClouds.opacity = 1.0;
+  foregroundClouds.blendMode = 'normal';
+  foregroundClouds.setBlackKey({ low: 0.005, high: 0.01 });
 
   dragon.setParticleParamsExternal({
     ratePerBone: 2,
@@ -443,7 +448,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon, particles, backgroundFlag, flag);
+  layers.push(dragon,flag,particles, backgroundFlag, clouds, foregroundClouds);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);

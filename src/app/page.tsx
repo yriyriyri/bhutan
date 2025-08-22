@@ -1,30 +1,72 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useShaderScene } from '../components/ShaderSceneContext';
+import PixelateLinkImage from '../components/PixelateLinkImage';
+
+const GAP_PX = 140;
+const IMG_HEIGHT_PX = 30;
 
 export default function HomePage() {
-  const { setShowDragon } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowClouds } = useShaderScene();
+
+  const bhutanRef = useRef<HTMLImageElement | null>(null);
+  const companyRef = useRef<HTMLImageElement | null>(null);
+
+  const recompute = useCallback(() => {
+    const _wl = bhutanRef.current?.getBoundingClientRect().width ?? 0;
+    const _wr = companyRef.current?.getBoundingClientRect().width ?? 0;
+  }, []);
 
   useEffect(() => {
     setShowDragon(true);
-  }, [setShowDragon]);
+    setShowFlags(false);
+    setShowClouds(true);
+  }, [setShowDragon, setShowFlags, setShowClouds]);
+
+  useEffect(() => {
+    const onResize = () => recompute();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [recompute]);
 
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
-      <Link
-        href="/about"
+      <div
         style={{
-          position: 'absolute', top: 16, right: 16, zIndex: 10,
-          fontFamily: '"Times New Roman", Times, serif',
-          fontWeight: 400, color: 'transparent', WebkitTextStroke: '0.6px #000',
-          fontSize: 'clamp(28px, 4vw, 72px)', lineHeight: 1.1, letterSpacing: 0.5,
-          textAlign: 'right', textDecoration: 'none', cursor: 'pointer',
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: `translate(-50%, -50%)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          columnGap: `${GAP_PX}px`,
+          zIndex: 10,
         }}
       >
-        BHUTAN TREASURY COMPANY
-      </Link>
+        <PixelateLinkImage
+          href="/menu"
+          src="/bhutan.png"
+          alt="Bhutan"
+          height={IMG_HEIGHT_PX}
+          style={{ display: 'inline-block', cursor: 'pointer' }}
+        />
+        <PixelateLinkImage
+          href="/menu"
+          src="/treasury.png"
+          alt="Treasury"
+          height={IMG_HEIGHT_PX}
+          style={{ display: 'inline-block', cursor: 'pointer' }}
+        />
+        <PixelateLinkImage
+          href="/menu"
+          src="/company.png"
+          alt="Company"
+          height={IMG_HEIGHT_PX}
+          style={{ display: 'inline-block', cursor: 'pointer' }}
+        />
+      </div>
     </div>
   );
 }
