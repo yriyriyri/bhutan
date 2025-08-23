@@ -2,3 +2,27 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body { background: #fff; }
+
+:root {
+  --fg-light: #000000;
+  --fg-dark:  #666666;
+}
+
+body.theme-light {
+  --fg: var(--fg-light);
+  background: #ffffff;
+  color: var(--fg);
+}
+
+body.theme-dark {
+  --fg: var(--fg-dark);
+  background: #000000;
+  color: var(--fg);
+}
+
+.page-text { color: var(--fg); }
+.page-link { color: var(--fg); text-decoration: none; }
+
+.ui-text { color: var(--fg); }
+.ui-link { color: var(--fg); text-decoration: none; }
+.ui-link:hover { text-decoration: underline; }

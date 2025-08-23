@@ -12,6 +12,7 @@ import BLEND_FRAG from './shaders/blend.frag.glsl';
 import ECHO_DELAYED_FRAG from './shaders/echoDelayed.frag.glsl';
 import ASCII_FINAL_FRAG from './shaders/finalAscii.frag.glsl';
 import PASSTHROUGH_FINAL_FRAG from './shaders/finalPassthrough.frag.glsl';
+import INVERT_FRAG from './shaders/invert.frag.glsl';
 
 //helper functions
 
@@ -393,6 +394,9 @@ export interface Pipeline {
   getLayers(): readonly Layer[];
   setLayerVisibility(id: string, visible: boolean): void;
   startBurn(opts?: { duration?: number; maxOpacity?: number }): void;
+  setInvertEnabled(on: boolean): void;
+  toggleInvert(): void;
+  isInvertEnabled(): boolean;
 }
 
 export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
@@ -453,8 +457,11 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
+  const invertPass = new FinalPass(INVERT_FRAG);
   let asciiEnabled = true; 
   let echoEnabled  = false;
+  let invertEnabled = false;
+  let finalStageRT!: THREE.WebGLRenderTarget;
 
   const chars = " .'`^\",:;Il!i~+_-?][}{1)(|\\/*tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
   const atlas = makeAsciiAtlas(chars, 48, "700 40px 'Courier New', monospace");
@@ -525,6 +532,15 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       lastSceneRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, rtParams);
       burnSnapRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, rtParams);
       burnRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, rtParams);
+
+      invertPass.setResolution(spec.pxW, spec.pxH);
+
+      finalStageRT?.dispose();
+      finalStageRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, {
+        depthBuffer: false,
+        stencilBuffer: false,
+        generateMipmaps: false,
+      });
     },
 
     update(time, dt) {
@@ -532,6 +548,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       for (const l of layers) l.update(time, dt);
       asciiPass.setTime(time);
       plainPass.setTime(time);
+      invertPass.setTime(time);
 
       if (burnActive) {
         burnT += Math.max(0, dt) / Math.max(1e-3, burnDur);
@@ -578,8 +595,15 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       snapshotCopy.render(renderer, lastSceneRT);
 
       if (asciiEnabled) {
-        asciiPass.setInput(inputForFinal);
-        asciiPass.render(renderer, target);
+        if (invertEnabled) {
+          asciiPass.setInput(inputForFinal);
+          asciiPass.render(renderer, finalStageRT);
+          invertPass.setInput(finalStageRT.texture);
+          invertPass.render(renderer, target);
+        } else {
+          asciiPass.setInput(inputForFinal);
+          asciiPass.render(renderer, target);
+        }
       } else {
         plainPass.setInput(inputForFinal);
         plainPass.render(renderer, target);
@@ -665,5 +689,8 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       burnPending = true;
       burnPendingOpts = opts ?? null;
     },
+    setInvertEnabled(on: boolean) { invertEnabled = !!on; },
+    toggleInvert() { invertEnabled = !invertEnabled; },
+    isInvertEnabled() { return invertEnabled; },
   };
 }

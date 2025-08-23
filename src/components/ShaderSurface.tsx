@@ -63,19 +63,35 @@ export default function ShaderSurface() {
     ro.observe(canvas);
     roRef.current = ro;
 
+    document.body.classList.add('theme-light');
+    document.body.classList.remove('theme-dark');
+  
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      const typing =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
       if (typing) return;
-      if (e.key.toLowerCase() === 'p') {
+  
+      const k = e.key.toLowerCase();
+      if (k === 'p') {
         e.preventDefault();
         pipelineRef.current?.toggleAscii();
         console.log('[ascii] enabled =', pipelineRef.current?.isAsciiEnabled());
+      } else if (k === 'i') {
+        e.preventDefault();
+        (pipelineRef.current as any)?.toggleInvert?.();
+        const inv = (pipelineRef.current as any)?.isInvertEnabled?.() ?? false;
+        document.body.classList.toggle('theme-dark', inv);
+        document.body.classList.toggle('theme-light', !inv);
+        console.log('[invert] enabled =', inv);
       }
     };
     window.addEventListener('keydown', onKey);
 
-    lastPathRef.current = pathname; // seed
+    lastPathRef.current = pathname;
 
     return () => {
       window.removeEventListener('keydown', onKey);

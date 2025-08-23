@@ -51,6 +51,7 @@ export default function HomePage() {
           alt="Bhutan"
           height={IMG_HEIGHT_PX}
           style={{ display: 'inline-block', cursor: 'pointer' }}
+          tintToTheme={true}
         />
         <PixelateLinkImage
           href="/about"
@@ -58,6 +59,7 @@ export default function HomePage() {
           alt="Treasury"
           height={IMG_HEIGHT_PX}
           style={{ display: 'inline-block', cursor: 'pointer' }}
+          tintToTheme={true}
         />
         <PixelateLinkImage
           href="/about"
@@ -65,6 +67,7 @@ export default function HomePage() {
           alt="Company"
           height={IMG_HEIGHT_PX}
           style={{ display: 'inline-block', cursor: 'pointer' }}
+          tintToTheme={true}
         />
       </div>
     </div>
