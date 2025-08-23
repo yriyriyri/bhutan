@@ -5,7 +5,9 @@ import { useEffect } from 'react';
 import { useShaderScene } from '../../components/ShaderSceneContext';
 
 import { Roboto_Mono } from 'next/font/google';
+
 const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+const m400 = Roboto_Mono({ weight: '400', subsets: ['latin'] });
 
 export default function AboutPage() {
   const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
@@ -20,7 +22,7 @@ export default function AboutPage() {
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
       <Link
-        href="/menu"
+        href="/"
         className={m.className}
         style={{
           position: 'absolute',
@@ -68,7 +70,15 @@ export default function AboutPage() {
           Lorem Ipsum&nbsp;is simply dummy text of the printing and typesetting
           industry. Lorem Ipsum has been the industry's standard dummy text ever
           since the 1500s, when an unknown printer took a galley of type and
-          scrambled it to make a type specimen book.
+          scrambled it to make a type specimen book. {' '}
+          <Link
+            href="/team"
+            className={m400.className}
+            style={{ textDecoration: 'none', color: '#000' }}
+          >
+            team
+          </Link>
+          .
         </p>
       </div>
     </div>

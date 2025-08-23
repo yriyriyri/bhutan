@@ -46,21 +46,21 @@ export default function HomePage() {
         }}
       >
         <PixelateLinkImage
-          href="/menu"
+          href="/about"
           src="/bhutan.png"
           alt="Bhutan"
           height={IMG_HEIGHT_PX}
           style={{ display: 'inline-block', cursor: 'pointer' }}
         />
         <PixelateLinkImage
-          href="/menu"
+          href="/about"
           src="/treasury.png"
           alt="Treasury"
           height={IMG_HEIGHT_PX}
           style={{ display: 'inline-block', cursor: 'pointer' }}
         />
         <PixelateLinkImage
-          href="/menu"
+          href="/about"
           src="/company.png"
           alt="Company"
           height={IMG_HEIGHT_PX}

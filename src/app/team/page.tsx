@@ -60,7 +60,7 @@ export default function TeamPage() {
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
       <Link
-        href="/menu"
+        href="/about"
         className={m.className}
         style={{
           position: 'absolute',

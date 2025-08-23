@@ -46,16 +46,16 @@ export default function MenuPage() {
           zIndex: 10,
         }}
       >
-        <div style={{ display: 'grid', gap: 12, textAlign: 'center' }}>
+        <div style={{ display: 'grid', gap: 20, textAlign: 'center' }}>
           <Link
             href="/about"
-            style={{ fontSize: 24, color: '#000', textDecoration: 'none', cursor: 'pointer' }}
+            style={{ fontSize: 18, color: '#000', textDecoration: 'none', cursor: 'pointer' }}
           >
             about
           </Link>
           <Link
             href="/team"
-            style={{ fontSize: 24, color: '#000', textDecoration: 'none', cursor: 'pointer' }}
+            style={{ fontSize: 18, color: '#000', textDecoration: 'none', cursor: 'pointer' }}
           >
             team
           </Link>
