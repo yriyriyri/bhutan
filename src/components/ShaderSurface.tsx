@@ -123,7 +123,7 @@ export default function ShaderSurface() {
     const p = pipelineRef.current;
     if (!p) return;
     if (lastPathRef.current !== null && lastPathRef.current !== pathname) {
-      p.startBurn?.({ duration: 0.9, maxOpacity: 1, fadeIn: 0.9 });
+      p.startBurn?.({ duration: 0.9, maxOpacity: 1, });
     }
     lastPathRef.current = pathname;
   }, [pathname]);
