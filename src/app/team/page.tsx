@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShaderScene } from '../../components/ShaderSceneContext';
 
 import { Roboto_Mono } from 'next/font/google';
-export const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
 
 const H_OFFSET = 120;
 const V_GAP = 80;

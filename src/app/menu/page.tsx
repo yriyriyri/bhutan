@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useShaderScene } from '../../components/ShaderSceneContext';
 
 import { Roboto_Mono } from 'next/font/google';
-export const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
 
 export default function MenuPage() {
   const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
