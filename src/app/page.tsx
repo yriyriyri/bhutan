@@ -46,7 +46,7 @@ export default function HomePage() {
         }}
       >
         <PixelateLinkImage
-          href="/about"
+          href="/menu"
           src="/bhutan.png"
           alt="Bhutan"
           height={IMG_HEIGHT_PX}
@@ -54,7 +54,7 @@ export default function HomePage() {
           tintToTheme={true}
         />
         <PixelateLinkImage
-          href="/about"
+          href="/menu"
           src="/treasury.png"
           alt="Treasury"
           height={IMG_HEIGHT_PX}
@@ -62,7 +62,7 @@ export default function HomePage() {
           tintToTheme={true}
         />
         <PixelateLinkImage
-          href="/about"
+          href="/menu"
           src="/company.png"
           alt="Company"
           height={IMG_HEIGHT_PX}

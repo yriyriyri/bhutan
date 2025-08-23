@@ -466,14 +466,14 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   // const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
   // const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
 
-  const flag = new PublicVideoLayer('flag', renderer, '/d.mp4');
+  const flag = new PublicVideoLayer('flag', renderer, '/flagfront.mp4');
   flag.zIndex = 4;
   flag.opacity = 1;
   flag.blendMode = 'normal';
   flag.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/back.mp4');
-  backgroundFlag.zIndex = -2;
+  const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/flagsback.mp4');
+  backgroundFlag.zIndex = 2;
   backgroundFlag.opacity = 1.0;
   backgroundFlag.blendMode = 'normal'; 
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });

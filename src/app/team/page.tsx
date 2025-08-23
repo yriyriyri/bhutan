@@ -53,7 +53,7 @@ export default function TeamPage() {
   return (
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
       <Link
-        href="/about"
+        href="/menu"
         className={`${m.className} ui-link`}
         style={{ position: 'absolute', top: 15, left: 15, fontSize: 25, zIndex: 20, lineHeight: 1 }}
       >
