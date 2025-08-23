@@ -5,23 +5,23 @@ import * as THREE from 'three';
 import { createPipeline, type Pipeline } from '../lib/graphics/pipeline';
 import { measureFromElement } from '../lib/graphics/sizing';
 import { useShaderScene } from './ShaderSceneContext';
+import { usePathname } from 'next/navigation';
 
 export default function ShaderSurface() {
   const { showDragon, showFlags, showParticles, showClouds } = useShaderScene();
+  const pathname = usePathname();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
+  const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: false,
-      premultipliedAlpha: false,
+      canvas, alpha: true, antialias: false, premultipliedAlpha: false,
       powerPreference: 'high-performance',
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -65,13 +65,8 @@ export default function ShaderSurface() {
 
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing =
-        !!target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       if (typing) return;
-
       if (e.key.toLowerCase() === 'p') {
         e.preventDefault();
         pipelineRef.current?.toggleAscii();
@@ -79,6 +74,8 @@ export default function ShaderSurface() {
       }
     };
     window.addEventListener('keydown', onKey);
+
+    lastPathRef.current = pathname; // seed
 
     return () => {
       window.removeEventListener('keydown', onKey);
@@ -102,17 +99,19 @@ export default function ShaderSurface() {
     p.setLayerVisibility?.('foreground-clouds', showClouds);
   }, [showDragon, showFlags, showParticles, showClouds]);
 
+  useEffect(() => {
+    const p = pipelineRef.current;
+    if (!p) return;
+    if (lastPathRef.current !== null && lastPathRef.current !== pathname) {
+      p.startBurn?.({ duration: 0.9, maxOpacity: 1 });
+    }
+    lastPathRef.current = pathname;
+  }, [pathname]);
+
   return (
     <canvas
       ref={canvasRef}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }}
+      style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}
     />
   );
 }

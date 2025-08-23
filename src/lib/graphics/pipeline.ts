@@ -392,6 +392,7 @@ export interface Pipeline {
   clearLayers(): void;
   getLayers(): readonly Layer[];
   setLayerVisibility(id: string, visible: boolean): void;
+  startBurn(opts?: { duration?: number; maxOpacity?: number }): void;
 }
 
 export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
@@ -480,6 +481,21 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   let lastDt = 1 / 60;
   let lastSpec: FrameSpec | null = null;
 
+  const snapshotCopy = new CopyPass();
+  const burnBlend    = new BlendPass();
+
+  let lastSceneRT!: THREE.WebGLRenderTarget;
+  let burnSnapRT!: THREE.WebGLRenderTarget; 
+  let burnRT!: THREE.WebGLRenderTarget; 
+
+  let burnActive  = false;
+  let burnT = 0;
+  let burnDur = 0.6;
+  let burnMax = 0.6;
+
+  let burnPending   = false;
+  let burnPendingOpts: { duration?: number; maxOpacity?: number } | null = null;
+
   const initOrResizeLayer = (l: Layer) => {
     if (!lastSpec) return; 
     (l as any).rt ? l.resize(lastSpec) : l.init(lastSpec);
@@ -495,6 +511,20 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       for (const l of layers) { (l as any).rt ? l.resize(spec) : l.init(spec); }
       asciiPass.setResolution(spec.pxW, spec.pxH);
       plainPass.setResolution(spec.pxW, spec.pxH);
+
+      const rtParams: THREE.RenderTargetOptions = {
+        depthBuffer: false,
+        stencilBuffer: false,
+        generateMipmaps: false
+      };
+  
+      lastSceneRT?.dispose();
+      burnSnapRT?.dispose();
+      burnRT?.dispose();
+  
+      lastSceneRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, rtParams);
+      burnSnapRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, rtParams);
+      burnRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, rtParams);
     },
 
     update(time, dt) {
@@ -502,28 +532,56 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       for (const l of layers) l.update(time, dt);
       asciiPass.setTime(time);
       plainPass.setTime(time);
+
+      if (burnActive) {
+        burnT += Math.max(0, dt) / Math.max(1e-3, burnDur);
+        if (burnT >= 1) burnActive = false;
+      }
     },
 
     render(target) {
+      if (burnPending) {
+        snapshotCopy.setInput(lastSceneRT.texture);
+        snapshotCopy.render(renderer, burnSnapRT);
+        burnActive = true;
+        burnT = 0;
+        burnDur = burnPendingOpts?.duration ?? 0.6;
+        burnMax = burnPendingOpts?.maxOpacity ?? 0.6;
+        burnPending = false;
+        burnPendingOpts = null;
+      }
+
       const compositeTex = compositor.composite(layers);
 
       const nowSec = performance.now() * 0.001;
       history.capture(renderer, compositeTex, nowSec, lastDt);
 
-      const postInput = echoEnabled
-        ? (() => {
-            const s3 = history.sample(nowSec, 0.3);
-            const s2 = history.sample(nowSec, 0.2);
-            const s1 = history.sample(nowSec, 0.1);
-            return echoPass.process(renderer, compositeTex, s3, s2, s1);
-          })()
-        : compositeTex;
+      const postInput = (() => {
+        if (!echoEnabled) return compositeTex;
+        const s3 = history.sample(nowSec, 0.3);
+        const s2 = history.sample(nowSec, 0.2);
+        const s1 = history.sample(nowSec, 0.1);
+        return echoPass.process(renderer, compositeTex, s3, s2, s1);
+      })();
+
+      let inputForFinal: THREE.Texture = postInput;
+      if (burnActive) {
+        const alpha = burnMax * (1 - Math.min(1, burnT));
+        if (alpha > 1e-4) {
+          burnBlend.setInputs(postInput, burnSnapRT.texture, alpha, 'multiply');
+          burnBlend.render(renderer, burnRT);
+          inputForFinal = burnRT.texture;
+        }
+      }
+
+      snapshotCopy.setInput(postInput);
+      snapshotCopy.render(renderer, lastSceneRT);
 
       if (asciiEnabled) {
-        asciiPass.setInput(postInput);
+        asciiPass.setInput(inputForFinal);
         asciiPass.render(renderer, target);
       } else {
-        plainPass.setInput(postInput);
+        plainPass.setInput(inputForFinal);
         plainPass.render(renderer, target);
       }
     },
@@ -602,6 +660,10 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
         (history as any) = newHist; // rebind
         if (lastSpec) newHist.resize(lastSpec, renderer);
       }
+    },
+    startBurn(opts) {
+      burnPending = true;
+      burnPendingOpts = opts ?? null;
     },
   };
 }

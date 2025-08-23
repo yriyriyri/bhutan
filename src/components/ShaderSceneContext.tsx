@@ -38,8 +38,13 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
   const [showClouds, setShowClouds] = useState(true);
 
   const value = useMemo(
-    () => ({ showDragon, setShowDragon, showFlags, setShowFlags, showParticles, setShowParticles, showClouds, setShowClouds }),
-    [showDragon, showFlags, showParticles]
+    () => ({
+      showDragon, setShowDragon,
+      showFlags, setShowFlags,
+      showParticles, setShowParticles,
+      showClouds, setShowClouds,
+    }),
+    [showDragon, showFlags, showParticles, showClouds]
   );
 
   return <ShaderSceneContext.Provider value={value}>{children}</ShaderSceneContext.Provider>;
