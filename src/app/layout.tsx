@@ -23,6 +23,19 @@ _|_|_|        _|        _|_|_|
           })();`}
         </Script>
 
+        <Script id="device-boot" strategy="beforeInteractive">
+          {`(function(){
+            try {
+              var mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+              var ua = navigator.userAgent || '';
+              var uaMobile = /iPhone|Android|Mobile|iPad|iPod|IEMobile|Opera Mini/i.test(ua);
+              var isMobile = (mq && mq.matches) || uaMobile;
+              document.documentElement.dataset.device = isMobile ? 'mobile' : 'desktop';
+              window.__IS_MOBILE__ = isMobile;
+            } catch(e) { window.__IS_MOBILE__ = false; }
+          })();`}
+        </Script>
+
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
         <meta id="meta-theme-color" name="theme-color" content="#ffffff" />
@@ -46,7 +59,6 @@ _|_|_|        _|        _|_|_|
               var meta = document.querySelector('meta#meta-theme-color');
               if (meta) meta.setAttribute('content', dark ? '#000000' : '#ffffff');
 
-              // Keep meta in sync if app toggles classes later (e.g. "i" key)
               var mo = new MutationObserver(function(){
                 var isDark = body.classList.contains('theme-dark');
                 var m = document.querySelector('meta#meta-theme-color');
@@ -54,7 +66,6 @@ _|_|_|        _|        _|_|_|
               });
               mo.observe(body, { attributes: true, attributeFilter: ['class'] });
 
-              // Follow system while no explicit user choice
               if (!saved && mql && mql.addEventListener) {
                 mql.addEventListener('change', function(e){
                   var d = !!e.matches;
