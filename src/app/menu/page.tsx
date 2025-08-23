@@ -46,7 +46,9 @@ export default function MenuPage() {
           fontSize: 25,
           zIndex: 20,
           lineHeight: 1,
-          textDecoration: 'none',
+          // key fix: only remove decoration on mobile, so desktop hover works
+          textDecoration: isMobile ? 'none' : undefined,
+          cursor: isMobile ? 'default' : 'pointer',
         }}
       >
         {'<'}
