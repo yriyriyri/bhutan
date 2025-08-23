@@ -463,9 +463,6 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
 
   let layers: Layer[] = [];
 
-  // const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
-  // const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
-
   const flag = new PublicVideoLayer('flag', renderer, '/flagfront.mp4');
   flag.zIndex = 4;
   flag.opacity = 1;

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from 'react';
+import { detectMobile } from '..//lib/utils/isMobile';
 
 type Ctx = {
   showDragon: boolean;
@@ -14,6 +15,8 @@ type Ctx = {
 
   showClouds: boolean;
   setShowClouds: (v: boolean) => void;
+
+  isMobile: boolean;
 };
 
 const ShaderSceneContext = createContext<Ctx>({
@@ -25,6 +28,7 @@ const ShaderSceneContext = createContext<Ctx>({
   setShowParticles: () => {},
   showClouds: true,
   setShowClouds: () => {},
+  isMobile: false, 
 });
 
 export function useShaderScene() {
@@ -37,14 +41,20 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
   const [showParticles, setShowParticles] = useState(true);
   const [showClouds, setShowClouds] = useState(true);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(detectMobile());
+  }, []);
+
   const value = useMemo(
     () => ({
       showDragon, setShowDragon,
       showFlags, setShowFlags,
       showParticles, setShowParticles,
       showClouds, setShowClouds,
+      isMobile,
     }),
-    [showDragon, showFlags, showParticles, showClouds]
+    [showDragon, showFlags, showParticles, showClouds, isMobile]
   );
 
   return <ShaderSceneContext.Provider value={value}>{children}</ShaderSceneContext.Provider>;

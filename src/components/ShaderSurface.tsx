@@ -2,17 +2,19 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { createPipeline, type Pipeline } from '../lib/graphics/pipeline';
+import { createPipeline as createDesktopPipeline, type Pipeline } from '../lib/graphics/pipeline';
+import { createPipeline as createMobilePipeline } from '../lib/graphics/mobilePipeline';
 import { measureFromElement } from '../lib/graphics/sizing';
 import { useShaderScene } from './ShaderSceneContext';
 import { usePathname } from 'next/navigation';
 
 export default function ShaderSurface() {
-  const { showDragon, showFlags, showParticles, showClouds } = useShaderScene();
+  const { showDragon, showFlags, showParticles, showClouds, isMobile } = useShaderScene();
   const pathname = usePathname();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
   const lastPathRef = useRef<string | null>(null);
 
@@ -20,25 +22,31 @@ export default function ShaderSurface() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas, alpha: true, antialias: false, premultipliedAlpha: false,
-      powerPreference: 'high-performance',
-    });
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.autoClear = false;
-    renderer.setClearColor(0x000000, 0);
+    let renderer = rendererRef.current;
+    if (!renderer) {
+      renderer = new THREE.WebGLRenderer({
+        canvas, alpha: true, antialias: false, premultipliedAlpha: false,
+        powerPreference: 'high-performance',
+      });
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.autoClear = false;
+      renderer.setClearColor(0x000000, 0);
+      rendererRef.current = renderer;
+    }
 
     const spec = measureFromElement(canvas, 1.0, 2);
     renderer.setPixelRatio(spec.dpr);
     renderer.setSize(spec.cssW, spec.cssH, false);
 
-    const pipeline = createPipeline(renderer);
+    const factory = isMobile ? createMobilePipeline : createDesktopPipeline;
+    const pipeline = factory(renderer);
     pipelineRef.current = pipeline;
     pipeline.resize(spec);
 
-    const dark = document.body.classList.contains('theme-dark') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const dark =
+      document.body.classList.contains('theme-dark') ||
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     pipeline.setInvertEnabled?.(!!dark);
-
 
     pipeline.setLayerVisibility?.('dragon-layer', showDragon);
     pipeline.setLayerVisibility?.('flag', showFlags);
@@ -67,18 +75,10 @@ export default function ShaderSurface() {
     ro.observe(canvas);
     roRef.current = ro;
 
-    document.body.classList.add('theme-light');
-    document.body.classList.remove('theme-dark');
-  
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing =
-        !!target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       if (typing) return;
-  
       const k = e.key.toLowerCase();
       if (k === 'p') {
         e.preventDefault();
@@ -90,6 +90,8 @@ export default function ShaderSurface() {
         const inv = (pipelineRef.current as any)?.isInvertEnabled?.() ?? false;
         document.body.classList.toggle('theme-dark', inv);
         document.body.classList.toggle('theme-light', !inv);
+        const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
+        if (meta) meta.content = inv ? '#000000' : '#ffffff';
         console.log('[invert] enabled =', inv);
       }
     };
@@ -102,11 +104,9 @@ export default function ShaderSurface() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       pipeline.dispose();
-      renderer.dispose();
       pipelineRef.current = null;
-      roRef.current = null;
     };
-  }, []); 
+  }, [isMobile]); 
 
   useEffect(() => {
     const p = pipelineRef.current;
