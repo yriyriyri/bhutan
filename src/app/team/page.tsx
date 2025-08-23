@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShaderScene } from '../../components/ShaderSceneContext';
 
 import { Roboto_Mono } from 'next/font/google';
-export const mono = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+export const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
 
 const H_OFFSET = 120;
 const V_GAP = 80;
@@ -61,7 +61,7 @@ export default function TeamPage() {
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
       <Link
         href="/menu"
-        className={mono.className}
+        className={m.className}
         style={{
           position: 'absolute',
           top: 15,
@@ -76,7 +76,7 @@ export default function TeamPage() {
         {'<'}
       </Link>
       <div
-        className={mono.className}
+        className={m.className}
         style={{
           position: 'absolute',
           left: '50%',

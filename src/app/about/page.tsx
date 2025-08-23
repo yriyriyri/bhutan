@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useShaderScene } from '../../components/ShaderSceneContext';
 
 import { Roboto_Mono } from 'next/font/google';
-export const mono = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+export const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
 
 export default function AboutPage() {
   const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
@@ -21,7 +21,7 @@ export default function AboutPage() {
     <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
       <Link
         href="/menu"
-        className={mono.className}
+        className={m.className}
         style={{
           position: 'absolute',
           top: 15,
@@ -47,7 +47,7 @@ export default function AboutPage() {
         }}
       >
         <div
-          className={mono.className}
+          className={m.className}
           style={{
             fontSize: 24,
             lineHeight: 1.2,
