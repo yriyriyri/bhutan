@@ -1,4 +1,3 @@
-// components/PixelateLinkImage.tsx
 'use client';
 
 import Link from 'next/link';
@@ -12,11 +11,17 @@ type Props = {
   height: number;
   enabled?: boolean;
   style?: React.CSSProperties;
-  tintToTheme?: boolean; 
+  tintToTheme?: boolean;
 };
 
-function isThemeDark(): boolean {
-  return typeof document !== 'undefined' && document.body.classList.contains('theme-dark');
+function readInvertOn(): boolean {
+  const root = document.documentElement;
+  const body = document.body;
+  const hasClass = root.classList.contains('ui-invert') || body.classList.contains('ui-invert');
+  const varMatch =
+    (getComputedStyle(root).getPropertyValue('--invert').trim() === '1') ||
+    (getComputedStyle(body).getPropertyValue('--invert').trim() === '1');
+  return hasClass || varMatch;
 }
 
 export default function PixelateLinkImage({
@@ -28,17 +33,40 @@ export default function PixelateLinkImage({
   style,
   tintToTheme = false,
 }: Props) {
-  const [themeDark, setThemeDark] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false);
+  const [invertOn, setInvertOn] = useState(false);
 
   useEffect(() => {
-    const update = () => setThemeDark(isThemeDark());
-    update(); 
-    const mo = new MutationObserver(update);
-    mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    return () => mo.disconnect();
+    setMounted(true);
+    setInvertOn(readInvertOn());
+
+    const onMut = () => setInvertOn(readInvertOn());
+    const moRoot = new MutationObserver(onMut);
+    const moBody = new MutationObserver(onMut);
+    moRoot.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+    moBody.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+    return () => {
+      moRoot.disconnect();
+      moBody.disconnect();
+    };
   }, []);
 
-  const useCanvas = enabled || (tintToTheme && themeDark);
+  if (!mounted || (!tintToTheme && !enabled) || (tintToTheme && !invertOn)) {
+    return (
+      <Link href={href} aria-label={alt} style={{ display: 'inline-block', ...style }}>
+        <NextImage
+          src={src}
+          alt={alt}
+          width={0}
+          height={0}
+          sizes="100vw"
+          unoptimized
+          priority
+          style={{ height: `${height}px`, width: 'auto', display: 'block' }}
+        />
+      </Link>
+    );
+  }
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dimsRef = useRef<{ W: number; H: number; dpr: number } | null>(null);
@@ -58,6 +86,7 @@ export default function PixelateLinkImage({
     (ctx as any).imageSmoothingQuality = 'high';
 
     const fg =
+      getComputedStyle(document.documentElement).getPropertyValue('--fg').trim() ||
       getComputedStyle(document.body).getPropertyValue('--fg').trim() ||
       '#d0d0d0';
 
@@ -70,13 +99,6 @@ export default function PixelateLinkImage({
   }, []);
 
   useEffect(() => {
-    if (!useCanvas) return;
-    draw();
-  }, [useCanvas, themeDark, draw]);
-
-  useEffect(() => {
-    if (!useCanvas) return;
-
     let disposed = false;
     const cvs = canvasRef.current;
     if (!cvs) return;
@@ -93,8 +115,10 @@ export default function PixelateLinkImage({
       const aspect = img.naturalWidth / img.naturalHeight;
       const W = Math.max(1, Math.round(H * aspect));
 
+      // CSS size
       cvs.style.height = `${H}px`;
       cvs.style.width = `${W}px`;
+      // backing store
       cvs.width = W * dpr;
       cvs.height = H * dpr;
 
@@ -117,31 +141,23 @@ export default function PixelateLinkImage({
     const onResize = () => build();
     window.addEventListener('resize', onResize);
 
+    const moRoot = new MutationObserver(() => requestAnimationFrame(draw));
+    const moBody = new MutationObserver(() => requestAnimationFrame(draw));
+    moRoot.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+    moBody.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+
     return () => {
       disposed = true;
       window.removeEventListener('resize', onResize);
       img.removeEventListener('load', onLoad);
+      moRoot.disconnect();
+      moBody.disconnect();
     };
-  }, [useCanvas, src, height, draw]);
-
-  const content = useCanvas ? (
-    <canvas ref={canvasRef} />
-  ) : (
-    <NextImage
-      src={src}
-      alt={alt}
-      width={0}
-      height={0}
-      sizes="100vw"
-      unoptimized
-      priority
-      style={{ height: `${height}px`, width: 'auto', display: 'block' }}
-    />
-  );
+  }, [src, height, draw]);
 
   return (
     <Link href={href} aria-label={alt} style={{ display: 'inline-block', ...style }}>
-      {content}
+      <canvas ref={canvasRef} />
     </Link>
   );
 }
