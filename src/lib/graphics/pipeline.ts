@@ -466,14 +466,14 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   // const torus = new TorusSceneLayer('torus-layer', renderer); torus.zIndex = 0; torus.opacity = 1.0;
   // const cube  = new CubeSceneLayer('cube-layer', renderer);   cube.zIndex  = 1; cube.opacity  = 0.95;
 
-  const flag = new PublicVideoLayer('flag', renderer, '/front.mp4');
+  const flag = new PublicVideoLayer('flag', renderer, '/d.mp4');
   flag.zIndex = 4;
   flag.opacity = 1;
   flag.blendMode = 'normal';
   flag.setWhiteKey({ low: 0.98, high: 0.99 });
 
   const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/back.mp4');
-  backgroundFlag.zIndex = 2;
+  backgroundFlag.zIndex = -2;
   backgroundFlag.opacity = 1.0;
   backgroundFlag.blendMode = 'normal'; 
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
@@ -512,7 +512,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon,flag,particles, backgroundFlag, clouds, foregroundClouds);
+  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
@@ -658,29 +658,27 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
         return echoPass.process(renderer, compositeTex, s3, s2, s1);
       })();
 
-      let inputForFinal: THREE.Texture = postInput;
 
+      let burnedTex = postInput;
+      if (burnActive) {
+        const alpha = burnMax * (1 - Math.min(1, burnT));
+        if (alpha > 1e-4) {
+          burnBlend.setInputs(postInput, burnSnapRT.texture, alpha, 'multiply'); // <- base = postInput again
+          burnBlend.render(renderer, burnRT);
+          burnedTex = burnRT.texture;
+        }
+      }
+      
+      let inputForFinal: THREE.Texture = burnedTex;
       if (fadeInActive) {
         const gain = Math.min(1, fadeInT);
         if (gain < 1 - 1e-4) {
-          fadePass.setInput(inputForFinal, gain);
+          fadePass.setInput(burnedTex, gain);
           fadePass.render(renderer, fadeRT);
           inputForFinal = fadeRT.texture;
         }
       }
       
-      if (burnActive) {
-        const alpha = burnMax * (1 - Math.min(1, burnT));
-        if (alpha > 1e-4) {
-          burnBlend.setInputs(inputForFinal, burnSnapRT.texture, alpha, 'multiply');
-          burnBlend.render(renderer, burnRT);
-          inputForFinal = burnRT.texture;
-        }
-      }
-
-      snapshotCopy.setInput(postInput);
-      snapshotCopy.render(renderer, lastSceneRT);
-
       if (asciiEnabled) {
         if (invertEnabled) {
           asciiPass.setInput(inputForFinal);
@@ -695,6 +693,9 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
         plainPass.setInput(inputForFinal);
         plainPass.render(renderer, target);
       }
+
+      snapshotCopy.setInput(postInput);
+      snapshotCopy.render(renderer, lastSceneRT);
     },
 
     dispose() {
@@ -776,9 +777,15 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     startBurn(opts) {
       burnPending = true;
       burnPendingOpts = opts ?? null;
-      fadeInActive = true;
-      fadeInT = 0;
-      fadeInDur = (opts?.fadeIn ?? 0.5);
+      const fi = opts?.fadeIn;
+      if (typeof fi === 'number' && fi > 0) {
+        fadeInActive = true;
+        fadeInT = 0;
+        fadeInDur = fi;
+      } else {
+        fadeInActive = false;
+        fadeInT = 0;
+      }
     },
     setInvertEnabled(on: boolean) { invertEnabled = !!on; },
     toggleInvert() { invertEnabled = !invertEnabled; },
