@@ -36,7 +36,7 @@ export default function HomePage() {
   }, [setShowDragon, setShowFlags, setShowClouds]);
 
   return (
-    <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
+    <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>
       <div
         style={{
           position: 'absolute',

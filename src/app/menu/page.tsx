@@ -35,7 +35,7 @@ export default function MenuPage() {
   }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds]);
 
   return (
-    <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
+    <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>
       <Link
         href="/"
         className={`${m.className} ui-link`}
@@ -46,7 +46,6 @@ export default function MenuPage() {
           fontSize: 25,
           zIndex: 20,
           lineHeight: 1,
-          // key fix: only remove decoration on mobile, so desktop hover works
           textDecoration: isMobile ? 'none' : undefined,
           cursor: isMobile ? 'default' : 'pointer',
         }}

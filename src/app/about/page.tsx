@@ -61,7 +61,7 @@ export default function AboutPage() {
       };
 
   return (
-    <div style={{ height: '100vh', position: 'relative', overflow: 'clip' }}>
+    <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>
       <Link
         href="/menu"
         className={`${m.className} ui-link`}
