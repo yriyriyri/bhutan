@@ -1,24 +1,34 @@
-// components/ShaderSceneContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from 'react';
-import { detectMobile } from '../lib/utils/isMobile'; 
+import { detectMobile } from '..//lib/utils/isMobile';
 
 type Ctx = {
-  showDragon: boolean;  setShowDragon: (v: boolean) => void;
-  showFlags: boolean;   setShowFlags: (v: boolean) => void;
-  showParticles: boolean; setShowParticles: (v: boolean) => void;
-  showClouds: boolean;    setShowClouds: (v: boolean) => void;
+  showDragon: boolean;
+  setShowDragon: (v: boolean) => void;
 
-  isMobile: boolean | null;
+  showFlags: boolean;
+  setShowFlags: (v: boolean) => void;
+
+  showParticles: boolean;
+  setShowParticles: (v: boolean) => void;
+
+  showClouds: boolean;
+  setShowClouds: (v: boolean) => void;
+
+  isMobile: boolean;
 };
 
 const ShaderSceneContext = createContext<Ctx>({
-  showDragon: true,  setShowDragon: () => {},
-  showFlags:  false, setShowFlags:  () => {},
-  showParticles: true, setShowParticles: () => {},
-  showClouds: true,    setShowClouds:    () => {},
-  isMobile: null,
+  showDragon: true,
+  setShowDragon: () => {},
+  showFlags: false,
+  setShowFlags: () => {},
+  showParticles: true,
+  setShowParticles: () => {},
+  showClouds: true,
+  setShowClouds: () => {},
+  isMobile: false, 
 });
 
 export function useShaderScene() {
@@ -31,16 +41,9 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
   const [showParticles, setShowParticles] = useState(true);
   const [showClouds, setShowClouds] = useState(true);
 
-  const [isMobile, setIsMobile] = useState<boolean | null>(null);
-
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
-    const resolve = () => {
-      setIsMobile(mq.matches || detectMobile());
-    };
-    resolve();
-    mq.addEventListener?.('change', resolve);
-    return () => mq.removeEventListener?.('change', resolve);
+    setIsMobile(detectMobile());
   }, []);
 
   const value = useMemo(
