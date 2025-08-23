@@ -5,7 +5,7 @@ body { background: #fff; }
 
 :root {
   --fg-light: #000000;
-  --fg-dark:  #666666;
+  --fg-dark:  #909090;
 }
 
 body.theme-light {
