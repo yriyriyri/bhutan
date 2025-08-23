@@ -424,7 +424,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   dragon.opacity = 1.0;
   dragon.blendMode = 'normal';
 
-  const clouds = new PublicVideoLayer('clouds', renderer, '/13.mp4');
+  const clouds = new PublicVideoLayer('clouds', renderer, '/14.mp4');
   clouds.zIndex = 1;
   clouds.opacity = 1.0;
   clouds.blendMode = 'normal';
