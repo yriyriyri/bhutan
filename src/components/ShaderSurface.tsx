@@ -16,12 +16,19 @@ export default function ShaderSurface() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
   const lastPathRef = useRef<string | null>(null);
+  const modeRef = useRef<'mobile' | 'desktop' | null>(null);
+  const rafResizeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!deviceReady) return;
+    const mode: 'mobile' | 'desktop' = isMobile ? 'mobile' : 'desktop';
+    if (modeRef.current === mode) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
+    if (pipelineRef.current) { pipelineRef.current.dispose(); pipelineRef.current = null; }
 
     let renderer = rendererRef.current;
     if (!renderer) {
@@ -64,6 +71,8 @@ export default function ShaderSurface() {
     const factory = isMobile ? createMobilePipeline : createDesktopPipeline;
     const pipeline = factory(renderer);
     pipelineRef.current = pipeline;
+    modeRef.current = mode;
+
     pipeline.resize(initialSpec);
 
     const dark =
@@ -89,23 +98,24 @@ export default function ShaderSurface() {
     };
     raf = requestAnimationFrame(loop);
 
-    const onVVChange = () => applySpec(computeVisibleSpec());
-    window.visualViewport?.addEventListener('resize', onVVChange);
-    window.visualViewport?.addEventListener('scroll', onVVChange);
+    const scheduleResize = () => {
+      if (rafResizeRef.current != null) return;
+      rafResizeRef.current = requestAnimationFrame(() => {
+        rafResizeRef.current = null;
+        applySpec(computeVisibleSpec());
+      });
+    };
+    window.visualViewport?.addEventListener('resize', scheduleResize);
+    window.visualViewport?.addEventListener('scroll', scheduleResize);
 
-    const ro = new ResizeObserver(onVVChange);
+    const ro = new ResizeObserver(scheduleResize);
     ro.observe(canvas);
     roRef.current = ro;
 
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing =
-        !!target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       if (typing) return;
-
       const k = e.key.toLowerCase();
       if (k === 'p') {
         e.preventDefault();
@@ -128,12 +138,12 @@ export default function ShaderSurface() {
       window.removeEventListener('keydown', onKey);
       cancelAnimationFrame(raf);
       ro.disconnect();
-      window.visualViewport?.removeEventListener('resize', onVVChange);
-      window.visualViewport?.removeEventListener('scroll', onVVChange);
+      window.visualViewport?.removeEventListener('resize', scheduleResize);
+      window.visualViewport?.removeEventListener('scroll', scheduleResize);
       pipeline.dispose();
       pipelineRef.current = null;
     };
-  }, [deviceReady, isMobile, showDragon, showFlags, showParticles, showClouds]);
+  }, [deviceReady, isMobile]); 
 
   useEffect(() => {
     const p = pipelineRef.current;
