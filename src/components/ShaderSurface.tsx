@@ -21,7 +21,7 @@ export default function ShaderSurface() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+  
     let renderer = rendererRef.current;
     if (!renderer) {
       renderer = new THREE.WebGLRenderer({
@@ -33,28 +33,48 @@ export default function ShaderSurface() {
       renderer.setClearColor(0x000000, 0);
       rendererRef.current = renderer;
     }
-
-    const spec = measureFromElement(canvas, 1.0, 2);
-    renderer.setPixelRatio(spec.dpr);
-    renderer.setSize(spec.cssW, spec.cssH, false);
-
+  
+    const computeVisibleSpec = () => {
+      const vv = window.visualViewport;
+      const cssW = Math.round(vv?.width ?? window.innerWidth);
+      const cssH = Math.round(vv?.height ?? window.innerHeight);
+      const dpr  = Math.min(2, window.devicePixelRatio || 1);
+  
+      return {
+        cssW, cssH, dpr,
+        pxW: Math.max(1, Math.round(cssW * dpr)),
+        pxH: Math.max(1, Math.round(cssH * dpr)),
+        cssAspect: cssW / Math.max(1, cssH),
+        pxAspect: (cssW * dpr) / Math.max(1, cssH * dpr),
+      };
+    };
+  
+    const applySpec = (spec: any) => {
+      renderer!.setPixelRatio(spec.dpr);
+      renderer!.setSize(spec.cssW, spec.cssH, false);
+      pipelineRef.current?.resize(spec);
+    };
+  
+    const initialSpec = computeVisibleSpec();
+    applySpec(initialSpec);
+  
     const factory = isMobile ? createMobilePipeline : createDesktopPipeline;
     const pipeline = factory(renderer);
     pipelineRef.current = pipeline;
-    pipeline.resize(spec);
-
+    pipeline.resize(initialSpec);
+  
     const dark =
       document.body.classList.contains('theme-dark') ||
       (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     pipeline.setInvertEnabled?.(!!dark);
-
+  
     pipeline.setLayerVisibility?.('dragon-layer', showDragon);
     pipeline.setLayerVisibility?.('flag', showFlags);
     pipeline.setLayerVisibility?.('background-flag', showFlags);
     pipeline.setLayerVisibility?.('particles', showParticles);
     pipeline.setLayerVisibility?.('clouds', showClouds);
     pipeline.setLayerVisibility?.('foreground-clouds', showClouds);
-
+  
     let raf = 0;
     let last = performance.now();
     const loop = (t: number) => {
@@ -65,16 +85,16 @@ export default function ShaderSurface() {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-
+  
+    const onVVChange = () => applySpec(computeVisibleSpec());
+    window.visualViewport?.addEventListener('resize', onVVChange);
+  
     const ro = new ResizeObserver(() => {
-      const specNow = measureFromElement(canvas, 1.0, 2);
-      renderer.setPixelRatio(specNow.dpr);
-      renderer.setSize(specNow.cssW, specNow.cssH, false);
-      pipeline.resize(specNow);
+      onVVChange();
     });
     ro.observe(canvas);
     roRef.current = ro;
-
+  
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
@@ -96,17 +116,19 @@ export default function ShaderSurface() {
       }
     };
     window.addEventListener('keydown', onKey);
-
+  
     lastPathRef.current = pathname;
-
+  
     return () => {
       window.removeEventListener('keydown', onKey);
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.visualViewport?.removeEventListener('resize', onVVChange);
+      window.visualViewport?.removeEventListener('scroll', onVVChange);
       pipeline.dispose();
       pipelineRef.current = null;
     };
-  }, [isMobile]); 
+  }, [isMobile]);
 
   useEffect(() => {
     const p = pipelineRef.current;
@@ -131,7 +153,7 @@ export default function ShaderSurface() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}
+      style={{ position: 'fixed', inset: 0, width: '100dvw', height: '100dvh', zIndex: 0, pointerEvents: 'none' }}
     />
   );
 }

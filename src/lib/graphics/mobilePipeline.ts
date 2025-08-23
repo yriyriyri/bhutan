@@ -5,6 +5,7 @@ import { TorusSceneLayer } from './layers/TorusSceneLayer';
 import { CubeSceneLayer } from './layers/CubeSceneLayer';
 import { DragonSceneLayer } from './layers/DragonSceneLayer';
 import { PublicVideoLayer } from './layers/PublicVideoLayer';
+import { BottomAnchoredPublicVideoLayer } from './layers/BottomAnchoredPublicVideoLayer';
 import { makeTibetanAsciiAtlas, showAtlasDebug, makeAsciiAtlas } from '@/lib/graphics/asciiAtlas';
 import FULLSCREEN_VERT from './shaders/fullscreen.vert.glsl';
 import COPY_FRAG from './shaders/copy.frag.glsl';
@@ -13,6 +14,8 @@ import ECHO_DELAYED_FRAG from './shaders/echoDelayed.frag.glsl';
 import ASCII_FINAL_FRAG from './shaders/finalAscii.frag.glsl';
 import PASSTHROUGH_FINAL_FRAG from './shaders/finalPassthrough.frag.glsl';
 import INVERT_FRAG from './shaders/invert.frag.glsl';
+import GAIN_FRAG from './shaders/gain.frag.glsl';
+
 
 //helper functions
 
@@ -333,15 +336,7 @@ class GainPass {
   constructor() {
     this.material = new THREE.ShaderMaterial({
       vertexShader: FULLSCREEN_VERT,
-      fragmentShader: /* glsl */`
-        varying vec2 vUv;
-        uniform sampler2D uInput;
-        uniform float uGain;
-        void main() {
-          vec4 c = texture2D(uInput, vUv);
-          gl_FragColor = vec4(c.rgb * uGain, c.a);
-        }
-      `,
+      fragmentShader: GAIN_FRAG,
       uniforms: {
         uInput: { value: null as THREE.Texture | null },
         uGain:  { value: 1.0 },
@@ -358,6 +353,7 @@ class GainPass {
     this.quad.render(renderer, target);
   }
 }
+  
 
 // pingpong + blend compositor 
 class Compositor {
@@ -463,14 +459,14 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
 
   let layers: Layer[] = [];
 
-  const flag = new PublicVideoLayer('flag', renderer, '/flagfront.mp4');
+  const flag = new BottomAnchoredPublicVideoLayer('flag', renderer, '/flagsM.mp4');
   flag.zIndex = 4;
   flag.opacity = 1;
   flag.blendMode = 'normal';
   flag.setWhiteKey({ low: 0.98, high: 0.99 });
 
   const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/flagsback.mp4');
-  backgroundFlag.zIndex = 2;
+  backgroundFlag.zIndex = -2;
   backgroundFlag.opacity = 1.0;
   backgroundFlag.blendMode = 'normal'; 
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });

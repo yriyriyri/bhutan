@@ -26,6 +26,7 @@ _|_|_|        _|        _|_|_|
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
         <meta id="meta-theme-color" name="theme-color" content="#ffffff" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
         <Script id="theme-init" strategy="beforeInteractive">
           {`(function(){

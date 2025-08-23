@@ -8,7 +8,8 @@ import { Roboto_Mono } from 'next/font/google';
 
 const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
 
-const H_OFFSET = 120;
+const H_OFFSET_DESKTOP = 120;
+const H_OFFSET_MOBILE  = 60;
 const V_GAP = 80;
 const FONT_SIZE_PX = 11;
 
@@ -18,8 +19,22 @@ const ENTRIES = [
   { name: 'Amadeo Barrionuevo', role: 'Dev, Voxl Studios' },
 ];
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
+  }, []);
+  return isMobile;
+}
+
 export default function TeamPage() {
   const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
+  const isMobile = useIsMobile();
+  const H_OFFSET = isMobile ? H_OFFSET_MOBILE : H_OFFSET_DESKTOP;
 
   useEffect(() => {
     setShowDragon(false);
@@ -55,7 +70,15 @@ export default function TeamPage() {
       <Link
         href="/menu"
         className={`${m.className} ui-link`}
-        style={{ position: 'absolute', top: 15, left: 15, fontSize: 25, zIndex: 20, lineHeight: 1 }}
+        style={{
+          position: 'absolute',
+          top: 15,
+          left: 15,
+          fontSize: 25,
+          zIndex: 20,
+          lineHeight: 1,
+          textDecoration: isMobile ? 'none' : undefined,
+        }}
       >
         {'<'}
       </Link>
@@ -78,10 +101,31 @@ export default function TeamPage() {
           return (
             <div
               key={name}
-              style={{ position: 'relative', width: 0, height: '1.2em', marginBottom: i < ENTRIES.length - 1 ? V_GAP : 0 }}
+              style={{
+                position: 'relative',
+                width: 0,
+                height: '1.2em',
+                marginBottom: i < ENTRIES.length - 1 ? V_GAP : 0,
+              }}
             >
-              <span style={{ position: 'absolute', left: -nameStartOffset, whiteSpace: 'nowrap' }}>{name}</span>
-              <span ref={setRoleRef(i)} style={{ position: 'absolute', left: H_OFFSET, whiteSpace: 'nowrap' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: -nameStartOffset,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {name}
+              </span>
+
+              <span
+                ref={setRoleRef(i)}
+                style={{
+                  position: 'absolute',
+                  left: H_OFFSET,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {role}
               </span>
             </div>
