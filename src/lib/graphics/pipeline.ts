@@ -613,7 +613,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       if (burnActive) {
         const alpha = burnMax * (1 - Math.min(1, burnT));
         if (alpha > 1e-4) {
-          burnBlend.setInputs(postInput, burnSnapRT.texture, alpha, 'normal');
+          burnBlend.setInputs(postInput, burnSnapRT.texture, alpha, 'multiply');
           burnBlend.render(renderer, burnRT);
           inputForFinal = burnRT.texture;
         }
