@@ -1,8 +1,6 @@
 // app/layout.tsx
 import './globals.css';
 import Script from 'next/script';
-import ShaderSurface from '../components/ShaderSurface';
-import { ShaderSceneProvider } from '../components/ShaderSceneContext';
 
 export const metadata = { title: 'btc' };
 
@@ -22,13 +20,26 @@ _|_|_|        _|        _|_|_|
             console.log('%c' + banner, 'font-family: monospace; line-height:1.1;');
           })();`}
         </Script>
+
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function(){
+            try {
+              var saved = localStorage.getItem('ui-theme'); // 'dark' | 'light' | null
+              var mql   = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+              var dark  = saved ? (saved === 'dark') : (mql ? mql.matches : false);
+
+              var html = document.documentElement;
+              var body = document.body;
+
+              html.classList.remove('theme-light','theme-dark');
+              body.classList.remove('theme-light','theme-dark');
+              (dark ? (html.classList.add('theme-dark'), body.classList.add('theme-dark'))
+                    : (html.classList.add('theme-light'), body.classList.add('theme-light')));
+            } catch(e){}
+          })();`}
+        </Script>
       </head>
-      <body style={{ margin: 0 }}>
-        <ShaderSceneProvider>
-          <ShaderSurface />
-          {children}
-        </ShaderSceneProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

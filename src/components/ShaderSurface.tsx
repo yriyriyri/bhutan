@@ -36,6 +36,10 @@ export default function ShaderSurface() {
     pipelineRef.current = pipeline;
     pipeline.resize(spec);
 
+    const dark = document.body.classList.contains('theme-dark') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    pipeline.setInvertEnabled?.(!!dark);
+
+
     pipeline.setLayerVisibility?.('dragon-layer', showDragon);
     pipeline.setLayerVisibility?.('flag', showFlags);
     pipeline.setLayerVisibility?.('background-flag', showFlags);

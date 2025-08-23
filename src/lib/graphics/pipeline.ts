@@ -136,6 +136,8 @@ class CompositeHistory {
   private captureFPS = 60; 
   private maxDelaySec: number;
 
+  private lastNowSec = 0;
+
   private copyMat = new THREE.ShaderMaterial({
     vertexShader: FULLSCREEN_VERT,
     fragmentShader: /* glsl */`
@@ -159,6 +161,7 @@ class CompositeHistory {
     this.capacity = Math.ceil(this.maxDelaySec * this.captureFPS) + 4;
     this.next = 0;
     this.acc = 0;
+    this.lastNowSec = 0;
 
     const w = Math.max(1, Math.round(spec.pxW * this.scale));
     const h = Math.max(1, Math.round(spec.pxH * this.scale));
@@ -176,17 +179,41 @@ class CompositeHistory {
   }
 
   capture(renderer: THREE.WebGLRenderer, compositeTex: THREE.Texture, nowSec: number, dtSec: number) {
-    this.acc += dtSec;
     const interval = 1 / this.captureFPS;
-    while (this.acc >= interval) {
-      this.acc -= interval;
+
+    const jump = this.lastNowSec > 0 ? (nowSec - this.lastNowSec) : 0;
+    if (dtSec > 0.5 || jump > 0.5) {
+      this.acc = 0;
       (this.copyMat.uniforms.uTex.value as any) = compositeTex;
       this.copyQuad.setMaterial(this.copyMat);
       const slot = this.buf[this.next];
       this.copyQuad.render(renderer, slot.rt);
       slot.t = nowSec;
       this.next = (this.next + 1) % this.capacity;
+      this.lastNowSec = nowSec;
+      return;
     }
+
+    this.acc += dtSec;
+
+    const MAX_STEPS = 4;
+    let steps = 0;
+    while (this.acc >= interval && steps < MAX_STEPS) {
+      this.acc -= interval;
+      (this.copyMat.uniforms.uTex.value as any) = compositeTex;
+      this.copyQuad.setMaterial(this.copyMat);
+      const slot = this.buf[this.next];
+      this.copyQuad.render(renderer, slot.rt);
+      slot.t = nowSec; 
+      this.next = (this.next + 1) % this.capacity;
+      steps++;
+    }
+
+    if (this.acc > interval * MAX_STEPS) {
+      this.acc = this.acc % interval;
+    }
+
+    this.lastNowSec = nowSec;
   }
 
   sample(nowSec: number, delaySec: number): { A: THREE.Texture; B: THREE.Texture; t: number } {
@@ -544,14 +571,15 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     },
 
     update(time, dt) {
-      lastDt = dt; 
-      for (const l of layers) l.update(time, dt);
+      const d = Math.min(dt, 0.05); 
+      lastDt = d;
+      for (const l of layers) l.update(time, d);
       asciiPass.setTime(time);
       plainPass.setTime(time);
       invertPass.setTime(time);
-
+    
       if (burnActive) {
-        burnT += Math.max(0, dt) / Math.max(1e-3, burnDur);
+        burnT += Math.max(0, d) / Math.max(1e-3, burnDur);
         if (burnT >= 1) burnActive = false;
       }
     },
@@ -614,6 +642,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       for (const l of layers) l.dispose();
       echoPass.dispose();
       history.dispose();
+      finalStageRT?.dispose();
     },
 
     setLayers(newLayers: Layer[]) {
