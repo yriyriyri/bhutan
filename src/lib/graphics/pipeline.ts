@@ -327,6 +327,38 @@ class FullCompositeEchoPass {
   dispose(){ this.outRT?.dispose(); }
 }
 
+class GainPass {
+  private material: THREE.ShaderMaterial;
+  private quad: FullscreenQuad;
+  constructor() {
+    this.material = new THREE.ShaderMaterial({
+      vertexShader: FULLSCREEN_VERT,
+      fragmentShader: /* glsl */`
+        varying vec2 vUv;
+        uniform sampler2D uInput;
+        uniform float uGain;
+        void main() {
+          vec4 c = texture2D(uInput, vUv);
+          gl_FragColor = vec4(c.rgb * uGain, c.a);
+        }
+      `,
+      uniforms: {
+        uInput: { value: null as THREE.Texture | null },
+        uGain:  { value: 1.0 },
+      },
+      transparent: false, depthTest: false, depthWrite: false
+    });
+    this.quad = new FullscreenQuad(this.material);
+  }
+  setInput(tex: THREE.Texture, gain: number) {
+    (this.material.uniforms.uInput.value as any) = tex;
+    (this.material.uniforms.uGain.value  as any) = gain;
+  }
+  render(renderer: THREE.WebGLRenderer, target: THREE.WebGLRenderTarget) {
+    this.quad.render(renderer, target);
+  }
+}
+
 // pingpong + blend compositor 
 class Compositor {
   private copy = new CopyPass();
@@ -420,7 +452,7 @@ export interface Pipeline {
   clearLayers(): void;
   getLayers(): readonly Layer[];
   setLayerVisibility(id: string, visible: boolean): void;
-  startBurn(opts?: { duration?: number; maxOpacity?: number }): void;
+  startBurn(opts?: { duration?: number; maxOpacity?: number; fadeIn?: number }): void;
   setInvertEnabled(on: boolean): void;
   toggleInvert(): void;
   isInvertEnabled(): boolean;
@@ -516,7 +548,9 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   let lastSpec: FrameSpec | null = null;
 
   const snapshotCopy = new CopyPass();
-  const burnBlend    = new BlendPass();
+  const burnBlend = new BlendPass();
+  const fadePass = new GainPass();
+
 
   let lastSceneRT!: THREE.WebGLRenderTarget;
   let burnSnapRT!: THREE.WebGLRenderTarget; 
@@ -526,6 +560,11 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   let burnT = 0;
   let burnDur = 0.6;
   let burnMax = 0.6;
+  let fadeRT!: THREE.WebGLRenderTarget;
+
+  let fadeInActive = false;
+  let fadeInT = 0;
+  let fadeInDur = 0.3; 
 
   let burnPending   = false;
   let burnPendingOpts: { duration?: number; maxOpacity?: number } | null = null;
@@ -568,6 +607,12 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
         stencilBuffer: false,
         generateMipmaps: false,
       });
+      fadeRT?.dispose();
+      fadeRT = new THREE.WebGLRenderTarget(spec.pxW, spec.pxH, {
+        depthBuffer: false,
+        stencilBuffer: false,
+        generateMipmaps: false,
+      });
     },
 
     update(time, dt) {
@@ -581,6 +626,10 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       if (burnActive) {
         burnT += Math.max(0, d) / Math.max(1e-3, burnDur);
         if (burnT >= 1) burnActive = false;
+      }
+      if (fadeInActive) {
+        fadeInT += Math.max(0, lastDt) / Math.max(1e-3, fadeInDur);
+        if (fadeInT >= 1) fadeInActive = false;
       }
     },
 
@@ -610,10 +659,20 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
       })();
 
       let inputForFinal: THREE.Texture = postInput;
+
+      if (fadeInActive) {
+        const gain = Math.min(1, fadeInT);
+        if (gain < 1 - 1e-4) {
+          fadePass.setInput(inputForFinal, gain);
+          fadePass.render(renderer, fadeRT);
+          inputForFinal = fadeRT.texture;
+        }
+      }
+      
       if (burnActive) {
         const alpha = burnMax * (1 - Math.min(1, burnT));
         if (alpha > 1e-4) {
-          burnBlend.setInputs(postInput, burnSnapRT.texture, alpha, 'multiply');
+          burnBlend.setInputs(inputForFinal, burnSnapRT.texture, alpha, 'multiply');
           burnBlend.render(renderer, burnRT);
           inputForFinal = burnRT.texture;
         }
@@ -717,6 +776,9 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     startBurn(opts) {
       burnPending = true;
       burnPendingOpts = opts ?? null;
+      fadeInActive = true;
+      fadeInT = 0;
+      fadeInDur = (opts?.fadeIn ?? 0.5);
     },
     setInvertEnabled(on: boolean) { invertEnabled = !!on; },
     toggleInvert() { invertEnabled = !invertEnabled; },
