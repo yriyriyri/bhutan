@@ -1,10 +1,10 @@
+// components/ShaderSurface.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createPipeline as createDesktopPipeline, type Pipeline } from '../lib/graphics/pipeline';
 import { createPipeline as createMobilePipeline } from '../lib/graphics/mobilePipeline';
-import { measureFromElement } from '../lib/graphics/sizing';
 import { useShaderScene } from './ShaderSceneContext';
 import { usePathname } from 'next/navigation';
 
@@ -12,20 +12,25 @@ export default function ShaderSurface() {
   const { showDragon, showFlags, showParticles, showClouds, isMobile } = useShaderScene();
   const pathname = usePathname();
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef   = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const roRef = useRef<ResizeObserver | null>(null);
+  const roRef       = useRef<ResizeObserver | null>(null);
   const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (isMobile === null) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     let renderer = rendererRef.current;
     if (!renderer) {
       renderer = new THREE.WebGLRenderer({
-        canvas, alpha: true, antialias: false, premultipliedAlpha: false,
+        canvas,
+        alpha: true,
+        antialias: false,
+        premultipliedAlpha: false,
         powerPreference: 'high-performance',
       });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -33,13 +38,12 @@ export default function ShaderSurface() {
       renderer.setClearColor(0x000000, 0);
       rendererRef.current = renderer;
     }
-  
+
     const computeVisibleSpec = () => {
-      const vv = window.visualViewport;
+      const vv   = window.visualViewport;
       const cssW = Math.round(vv?.width ?? window.innerWidth);
       const cssH = Math.round(vv?.height ?? window.innerHeight);
       const dpr  = Math.min(2, window.devicePixelRatio || 1);
-  
       return {
         cssW, cssH, dpr,
         pxW: Math.max(1, Math.round(cssW * dpr)),
@@ -48,33 +52,33 @@ export default function ShaderSurface() {
         pxAspect: (cssW * dpr) / Math.max(1, cssH * dpr),
       };
     };
-  
+
     const applySpec = (spec: any) => {
       renderer!.setPixelRatio(spec.dpr);
       renderer!.setSize(spec.cssW, spec.cssH, false);
       pipelineRef.current?.resize(spec);
     };
-  
+
     const initialSpec = computeVisibleSpec();
     applySpec(initialSpec);
-  
+
     const factory = isMobile ? createMobilePipeline : createDesktopPipeline;
     const pipeline = factory(renderer);
     pipelineRef.current = pipeline;
     pipeline.resize(initialSpec);
-  
+
     const dark =
       document.body.classList.contains('theme-dark') ||
       (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     pipeline.setInvertEnabled?.(!!dark);
-  
+
     pipeline.setLayerVisibility?.('dragon-layer', showDragon);
     pipeline.setLayerVisibility?.('flag', showFlags);
     pipeline.setLayerVisibility?.('background-flag', showFlags);
     pipeline.setLayerVisibility?.('particles', showParticles);
     pipeline.setLayerVisibility?.('clouds', showClouds);
     pipeline.setLayerVisibility?.('foreground-clouds', showClouds);
-  
+
     let raf = 0;
     let last = performance.now();
     const loop = (t: number) => {
@@ -85,25 +89,23 @@ export default function ShaderSurface() {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-  
+
     const onVVChange = () => applySpec(computeVisibleSpec());
     window.visualViewport?.addEventListener('resize', onVVChange);
-  
-    const ro = new ResizeObserver(() => {
-      onVVChange();
-    });
+    window.visualViewport?.addEventListener('scroll', onVVChange);
+
+    const ro = new ResizeObserver(() => onVVChange());
     ro.observe(canvas);
     roRef.current = ro;
-  
+
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      const typing = !!target && (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable);
       if (typing) return;
       const k = e.key.toLowerCase();
       if (k === 'p') {
         e.preventDefault();
         pipelineRef.current?.toggleAscii();
-        console.log('[ascii] enabled =', pipelineRef.current?.isAsciiEnabled());
       } else if (k === 'i') {
         e.preventDefault();
         (pipelineRef.current as any)?.toggleInvert?.();
@@ -112,23 +114,24 @@ export default function ShaderSurface() {
         document.body.classList.toggle('theme-light', !inv);
         const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
         if (meta) meta.content = inv ? '#000000' : '#ffffff';
-        console.log('[invert] enabled =', inv);
       }
     };
     window.addEventListener('keydown', onKey);
-  
+
     lastPathRef.current = pathname;
-  
+
     return () => {
       window.removeEventListener('keydown', onKey);
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.visualViewport?.removeEventListener('resize', onVVChange);
       window.visualViewport?.removeEventListener('scroll', onVVChange);
+      try { rendererRef.current?.dispose?.(); } catch {}
+      try { (rendererRef.current?.getContext() as any)?.getExtension?.('WEBGL_lose_context')?.loseContext?.(); } catch {}
       pipeline.dispose();
       pipelineRef.current = null;
     };
-  }, [isMobile]);
+  }, [isMobile, showDragon, showFlags, showParticles, showClouds, pathname]);
 
   useEffect(() => {
     const p = pipelineRef.current;
@@ -152,8 +155,17 @@ export default function ShaderSurface() {
 
   return (
     <canvas
+      key={isMobile === null ? 'pending' : isMobile ? 'm' : 'd'} 
       ref={canvasRef}
-      style={{ position: 'fixed', inset: 0, width: '100dvw', height: '100dvh', zIndex: 0, pointerEvents: 'none' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100dvw',
+        height: '100dvh',
+        zIndex: 0,
+        pointerEvents: 'none',
+        visibility: isMobile === null ? 'hidden' : 'visible',
+      }}
     />
   );
 }
