@@ -477,7 +477,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   backgroundFlag.blendMode = 'normal'; 
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const particles = new PublicVideoLayer('particles', renderer, '/particles.mp4');
+  const particles = new PublicVideoLayer('particles', renderer, '/dw.mp4');
   particles.zIndex = 1;
   particles.opacity = 1.0;
   particles.blendMode = 'normal';
