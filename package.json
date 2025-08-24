@@ -15,9 +15,11 @@
     "three": "^0.179.1"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "^4.2.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "gltfpack": "^0.25.0",
     "typescript": "^5"
   }
 }

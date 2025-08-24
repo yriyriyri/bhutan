@@ -7,6 +7,7 @@ import POST_FRAG from '../shaders/ssOutline.frag.glsl'
 import P_VERT from '../shaders/dragonParticles.vert.glsl'
 import P_FRAG from '../shaders/dragonParticles.frag.glsl'
 import { PMREMGenerator } from 'three';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export class DragonSceneLayer extends BaseSceneLayer {
@@ -150,6 +151,7 @@ export class DragonSceneLayer extends BaseSceneLayer {
     scene.add(this.points);
 
     const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
     loader.load(
       this.url || '/dragon.glb',
       (gltf) => {
