@@ -459,14 +459,14 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
 
   let layers: Layer[] = [];
 
-  const flag = new BottomAnchoredPublicVideoLayer('flag', renderer, '/flagsM.mp4');
+  const flag = new BottomAnchoredPublicVideoLayer('flag', renderer, '/flagsFM.mp4');
   flag.zIndex = 4;
   flag.opacity = 1;
   flag.blendMode = 'normal';
   flag.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const backgroundFlag = new PublicVideoLayer('background-flag', renderer, '/flagsback.mp4');
-  backgroundFlag.zIndex = -2;
+  const backgroundFlag = new BottomAnchoredPublicVideoLayer('background-flag', renderer, '/flagsBM.mp4');
+  backgroundFlag.zIndex = 2;
   backgroundFlag.opacity = 1.0;
   backgroundFlag.blendMode = 'normal'; 
   backgroundFlag.setWhiteKey({ low: 0.98, high: 0.99 });
