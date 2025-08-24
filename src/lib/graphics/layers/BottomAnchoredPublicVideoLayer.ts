@@ -158,4 +158,13 @@ export class BottomAnchoredPublicVideoLayer implements Layer {
   public clearKey() {
     (this.quad.material as THREE.ShaderMaterial).uniforms.uKeyMode.value = 0;
   }
+
+  public unlockMedia() {
+    if (!this.video) return;
+    this.video.muted = true;
+    this.video.playsInline = true;
+    this.video.setAttribute('playsinline', '');
+    const p = this.video.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  }
 }

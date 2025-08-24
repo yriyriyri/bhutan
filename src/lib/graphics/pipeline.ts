@@ -458,6 +458,8 @@ export interface Pipeline {
   setInvertEnabled(on: boolean): void;
   toggleInvert(): void;
   isInvertEnabled(): boolean;
+
+  unlockMedia?(): void;
 }
 
 export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
@@ -789,5 +791,11 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     setInvertEnabled(on: boolean) { invertEnabled = !!on; },
     toggleInvert() { invertEnabled = !invertEnabled; },
     isInvertEnabled() { return invertEnabled; },
+
+    unlockMedia() {
+      for (const l of layers) {
+        (l as any)?.unlockMedia?.();
+      }
+    },
   };
 }

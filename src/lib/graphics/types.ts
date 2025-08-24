@@ -14,4 +14,5 @@ export interface Layer {
   update(time: number, dt: number): void;
   render(): THREE.WebGLRenderTarget;
   dispose(): void;
+  unlockMedia?(): void;
 }

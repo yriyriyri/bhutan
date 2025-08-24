@@ -165,6 +165,25 @@ export default function ShaderSurface() {
     lastPathRef.current = pathname;
   }, [pathname]);
 
+  useEffect(() => {
+    if (!deviceReady || !isMobile) return;
+  
+    let done = false;
+    const unlock = () => {
+      if (done) return;
+      done = true;
+      (pipelineRef.current as any)?.unlockMedia?.();
+    };
+  
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('touchend',  unlock, { once: true });
+  
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('touchend',  unlock);
+    };
+  }, [deviceReady, isMobile]);
+
   return (
     <canvas
       ref={canvasRef}
