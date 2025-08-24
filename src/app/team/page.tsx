@@ -15,8 +15,8 @@ const FONT_SIZE_PX = 11;
 
 const ENTRIES = [
   { name: 'Oscar Paterson', role: 'Dev, Voxl Studios' },
-  { name: 'Will Vivian', role: 'Dev, Voxl Studios' },
-  { name: 'Amadeo Barrionuevo', role: 'Dev, Voxl Studios' },
+  { name: 'Will Vivian', role: '3d,   Voxl Studios' },
+  { name: 'Amadeo Barrionuevo', role: '2d,   Voxl Studios' },
 ];
 
 function useIsMobile() {
