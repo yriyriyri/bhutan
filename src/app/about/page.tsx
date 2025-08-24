@@ -77,18 +77,20 @@ export default function AboutPage() {
           </div>
         )}
 
-        <p
+        <pre
           style={{
             fontFamily: '"Courier New", Courier, monospace',
             fontSize: BODY_FONT_SIZE_PX,
-            lineHeight: 1.35,
             margin: 0,
+            whiteSpace: 'pre',
+            overflowX: 'auto',
           }}
         >
-          Lorem Ipsum&nbsp;is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the
-          industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and
-          scrambled it to make a type specimen book.
-        </p>
+        {`00000000  01 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000010  00 00 00 00 3B A3 ED FD  7A 7B 12 B2 7A C7 2C 3E  |....;£íýz{..zÇ,>|
+00000020  67 76 8F 61 7F CB 1B C3  88 8A 51 32 3A 9F B8 AA  |gv.. ….Q2:..ª|
+00000030  4B 1E 5E 4A 29 AB 5F 49  FF FF 00 1D 1D AC 2B 7C  |K.^J)._I……..+|`}
+        </pre>
       </div>
     </div>
   );
