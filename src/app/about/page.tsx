@@ -1,4 +1,3 @@
-// app/about/page.tsx
 'use client';
 
 import Link from 'next/link';
@@ -11,7 +10,7 @@ const m400 = Roboto_Mono({ weight: '400', subsets: ['latin'] });
 
 const BODY_FONT_SIZE_DESKTOP_PX = 14;
 const WIDTH_DESKTOP_PCT = 50;
-const CENTER_OFFSET_DESKTOP_PX = 100; 
+const CENTER_OFFSET_DESKTOP_PX = 100;
 
 const TOP_OFFSET_MOBILE_PX = 200;
 const BODY_FONT_SIZE_MOBILE_PX = 10;
@@ -53,7 +52,7 @@ export default function AboutPage() {
     : {
         position: 'absolute',
         left: '50%',
-        top: `calc(50% - ${CENTER_OFFSET_DESKTOP_PX}px)`, 
+        top: `calc(50% - ${CENTER_OFFSET_DESKTOP_PX}px)`,
         transform: 'translate(-50%, -50%)',
         width: `${WIDTH_PCT}vw`,
         zIndex: 10,
@@ -65,14 +64,26 @@ export default function AboutPage() {
       <Link
         href="/menu"
         className={`${m.className} ui-link`}
-        style={{ position: 'absolute', top: 15, left: 15, fontSize: 25, zIndex: 20, lineHeight: 1 }}
+        style={{
+          position: 'absolute',
+          top: 15,
+          left: 15,
+          fontSize: 25,
+          zIndex: 20,
+          lineHeight: 1,
+          textDecoration: isMobile ? 'none' : undefined,
+          cursor: isMobile ? 'default' : 'pointer',
+        }}
       >
         {'<'}
       </Link>
 
       <div className="ui-text" style={containerStyle}>
         {isMobile && (
-          <div className={m.className} style={{ fontSize: MOBILE_HEADER_FONT_SIZE_PX, lineHeight: 1.2, marginBottom: 8 }}>
+          <div
+            className={m.className}
+            style={{ fontSize: MOBILE_HEADER_FONT_SIZE_PX, lineHeight: 1.2, marginBottom: 8 }}
+          >
             about
           </div>
         )}
@@ -83,14 +94,12 @@ export default function AboutPage() {
             fontSize: BODY_FONT_SIZE_PX,
             margin: 0,
             whiteSpace: 'pre',
-            overflowX: 'auto',
+            overflowX: 'hidden',
           }}
-        >
-        {`00000000  01 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+        >{`00000000  01 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 00000010  00 00 00 00 3B A3 ED FD  7A 7B 12 B2 7A C7 2C 3E  |....;£íýz{..zÇ,>|
 00000020  67 76 8F 61 7F CB 1B C3  88 8A 51 32 3A 9F B8 AA  |gv.. ….Q2:..ª|
-00000030  4B 1E 5E 4A 29 AB 5F 49  FF FF 00 1D 1D AC 2B 7C  |K.^J)._I……..+|`}
-        </pre>
+00000030  4B 1E 5E 4A 29 AB 5F 49  FF FF 00 1D 1D AC 2B 7C  |K.^J)._I……..+|`}</pre>
       </div>
     </div>
   );
