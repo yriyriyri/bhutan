@@ -308,6 +308,7 @@ export default function ShaderSurface() {
               zIndex: 2,
               pointerEvents: 'none',
               userSelect: 'none',
+              fontWeight: 300,
             }}
           >
             © 2025 The Bhutan Treasury Company. All Rights Reserved.
@@ -325,6 +326,7 @@ export default function ShaderSurface() {
               pointerEvents: 'none',
               userSelect: 'none',
               display: 'flex',
+              fontWeight: 300,
               gap: 18,
             }}
           >
