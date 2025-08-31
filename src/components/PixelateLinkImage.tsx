@@ -1,9 +1,9 @@
-// components/PixelateLinkImage.tsx
 'use client';
 
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useShaderScene } from './ShaderSceneContext'; 
 
 type Props = {
   href: string;
@@ -28,11 +28,12 @@ export default function PixelateLinkImage({
   style,
   tintToTheme = false,
 }: Props) {
-  const [themeDark, setThemeDark] = useState<boolean>(false);
+  const { isMobile } = useShaderScene(); 
 
+  const [themeDark, setThemeDark] = useState<boolean>(false);
   useEffect(() => {
     const update = () => setThemeDark(isThemeDark());
-    update(); 
+    update();
     const mo = new MutationObserver(update);
     mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     return () => mo.disconnect();
@@ -138,6 +139,16 @@ export default function PixelateLinkImage({
       style={{ height: `${height}px`, width: 'auto', display: 'block' }}
     />
   );
+
+  const shouldLink = isMobile || href !== '/menu';
+
+  if (!shouldLink) {
+    return (
+      <span aria-label={alt} style={{ display: 'inline-block', ...style }}>
+        {content}
+      </span>
+    );
+  }
 
   return (
     <Link href={href} aria-label={alt} style={{ display: 'inline-block', ...style }}>

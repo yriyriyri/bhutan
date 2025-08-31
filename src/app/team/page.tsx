@@ -68,21 +68,24 @@ export default function TeamPage() {
 
   return (
     <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>
-      <Link
-        href="/menu"
-        className={`${m.className} ui-link`}
-        style={{
-          position: 'absolute',
-          top: 15,
-          left: 15,
-          fontSize: 25,
-          zIndex: 20,
-          lineHeight: 1,
-          textDecoration: isMobile ? 'none' : undefined,
-        }}
-      >
-        {'<'}
-      </Link>
+      {isMobile && (
+        <Link
+          href="/menu"
+          className={`${m.className} ui-link`}
+          style={{
+            position: 'absolute',
+            top: 15,
+            left: 15,
+            fontSize: 25,
+            zIndex: 20,
+            lineHeight: 1,
+            textDecoration: 'none',
+            cursor: 'default',
+          }}
+        >
+          {'<'}
+        </Link>
+      )}
 
       <div
         className={`${m.className} ui-text`}

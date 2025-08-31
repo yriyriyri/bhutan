@@ -56,7 +56,7 @@ export default function HomePage() {
             src="/mobilelogo.png"
             alt="Logo"
             height={IMG_HEIGHT_PX_MOBILE}
-            style={{ display: 'inline-block', cursor: 'pointer' }}
+            style={{ display: 'inline-block', cursor: isMobile ? 'pointer' : 'default' }}
             tintToTheme={true}
           />
         ) : (
@@ -66,7 +66,7 @@ export default function HomePage() {
               src="/bhutan.png"
               alt="Bhutan"
               height={IMG_HEIGHT_PX}
-              style={{ display: 'inline-block', cursor: 'pointer' }}
+              style={{ display: 'inline-block', cursor: isMobile ? 'pointer' : 'default' }}
               tintToTheme={true}
             />
             <PixelateLinkImage
@@ -74,7 +74,7 @@ export default function HomePage() {
               src="/treasury.png"
               alt="Treasury"
               height={IMG_HEIGHT_PX}
-              style={{ display: 'inline-block', cursor: 'pointer' }}
+              style={{ display: 'inline-block', cursor: isMobile ? 'pointer' : 'default' }}
               tintToTheme={true}
             />
             <PixelateLinkImage
@@ -82,7 +82,7 @@ export default function HomePage() {
               src="/company.png"
               alt="Company"
               height={IMG_HEIGHT_PX}
-              style={{ display: 'inline-block', cursor: 'pointer' }}
+              style={{ display: 'inline-block', cursor: isMobile ? 'pointer' : 'default' }}
               tintToTheme={true}
             />
           </>
