@@ -66,7 +66,12 @@ export default function ShaderSurface() {
     if (meta) meta.content = inv ? '#000000' : '#ffffff';
   };
 
-  const [hoverTop, setHoverTop] = useState({ about: false, leadership: false, invert: false });
+  const [hoverTop, setHoverTop] = useState({
+    btc: false,
+    about: false,
+    leadership: false,
+    invert: false,
+  });
 
   useEffect(() => {
     if (!deviceReady) return;
@@ -240,46 +245,7 @@ export default function ShaderSurface() {
           pointerEvents: 'none',
         }}
       />
-
-      {!isMobile && pathname !== '/' && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 15,
-            left: 12,
-            display: 'flex',
-            gap: 40,
-            zIndex: 2,
-            pointerEvents: 'auto',
-          }}
-        >
-          <PixelateLinkImage
-            href="/"
-            src="/bhutan.png"
-            alt="Home: Bhutan"
-            height={HOME_IMG_HEIGHT_PX}
-            style={{ display: 'inline-block', cursor: 'pointer' }}
-            tintToTheme
-          />
-          <PixelateLinkImage
-            href="/"
-            src="/treasury.png"
-            alt="Home: Treasury"
-            height={HOME_IMG_HEIGHT_PX}
-            style={{ display: 'inline-block', cursor: 'pointer' }}
-            tintToTheme
-          />
-          <PixelateLinkImage
-            href="/"
-            src="/company.png"
-            alt="Home: Company"
-            height={HOME_IMG_HEIGHT_PX}
-            style={{ display: 'inline-block', cursor: 'pointer' }}
-            tintToTheme
-          />
-        </div>
-      )}
-
+  
       {!isMobile && (
         <>
           <div
@@ -297,8 +263,8 @@ export default function ShaderSurface() {
               userSelect: 'none',
             }}
           />
-
-          <div
+  
+          {/* <div
             className={`${m.className} ui-text`}
             style={{
               position: 'fixed',
@@ -313,8 +279,8 @@ export default function ShaderSurface() {
             }}
           >
             © 2025 The Bhutan Treasury Company. All Rights Reserved.
-          </div>
-
+          </div> */}
+  
           <div
             className={`${m.className} ui-text`}
             style={{
@@ -331,12 +297,13 @@ export default function ShaderSurface() {
               gap: 18,
             }}
           >
+            <span style={{ marginRight: 48 }}>© 2025 The Bhutan Treasury Company. All Rights Reserved.</span>
             <span>contact</span>
             <span>legal</span>
             <span>terms of use</span>
             <span>privacy notice</span>
           </div>
-
+  
           <div
             className={`${m.className} ui-text`}
             style={{
@@ -344,7 +311,8 @@ export default function ShaderSurface() {
               top: 10,
               right: 12,
               display: 'flex',
-              gap: 25,
+              alignItems: 'center',
+              gap: 30,
               fontSize: 15,
               lineHeight: 1,
               zIndex: 2,
@@ -352,6 +320,23 @@ export default function ShaderSurface() {
               userSelect: 'none',
             }}
           >
+            <Link
+              href="/"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, btc: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, btc: false }))}
+              style={{
+                textDecoration: hoverTop.btc ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/' ? 400 : 300,
+              }}
+            >
+              BTC
+            </Link>
+
+            <span aria-hidden="true" style={{ pointerEvents: 'none' }}>-</span>
+
             <Link
               href="/about"
               className="ui-link"
