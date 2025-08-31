@@ -56,7 +56,9 @@ export default function BrandTypewriterLink({
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 
+  // underline + expansion ONLY on real pointer hover
   const [hover, setHover] = useState(false);
+
   const [step, setStep] = useState(0);
   const rafRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
@@ -64,7 +66,7 @@ export default function BrandTypewriterLink({
 
   const density = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-  // force paints
+  // force paints during scramble
   const [, setPhaseTick] = useState(0);
 
   const startTimesRef = useRef<number[][]>(words.map(w => new Array(w.length).fill(NaN)));
@@ -97,12 +99,9 @@ export default function BrandTypewriterLink({
         setStep(s => Math.min(totalExtra, Math.max(0, s + dirRef.current)));
       }
 
-      const done = (!hover && (step <= 0)) || (hover && (step >= totalExtra));
-      if (!done) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
-        rafRef.current = null;
-      }
+      const done = (!hover && step <= 0) || (hover && step >= totalExtra);
+      if (!done) rafRef.current = requestAnimationFrame(tick);
+      else rafRef.current = null;
     };
 
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -136,7 +135,6 @@ export default function BrandTypewriterLink({
 
   const display = useMemo(() => {
     if (!hover && step <= 0) return initials;
-
     if (hover && step >= totalExtra) return words.join(' ');
 
     const totalDuration = density.length * Math.max(1, scrambleMs);
@@ -165,7 +163,7 @@ export default function BrandTypewriterLink({
     });
 
     return parts.join(' ');
-  }, [words, counts, initials, hover, step, totalExtra, scrambleMs]);
+  }, [words, counts, initials, hover, step, totalExtra, scrambleMs, density]);
 
   return (
     <Link
@@ -174,8 +172,7 @@ export default function BrandTypewriterLink({
       className={`${m.className} ${className ?? ''}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onFocus={() => setHover(true)}
-      onBlur={() => setHover(false)}
+      // no focus handlers -> focus will NOT trigger underline/expand
       style={{
         cursor: 'pointer',
         textDecoration: underlineOnHover && hover ? 'underline' : 'none',
