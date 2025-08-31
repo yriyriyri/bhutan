@@ -33,7 +33,7 @@ function useIsMobile() {
 }
 
 export default function TeamPage() {
-  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha } = useShaderScene();
   const isMobile = useIsMobile();
   const H_OFFSET = isMobile ? H_OFFSET_MOBILE : H_OFFSET_DESKTOP;
 
@@ -42,7 +42,8 @@ export default function TeamPage() {
     setShowFlags(false);
     setShowParticles(true);
     setShowClouds(false);
-  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds]);
+    setShowBuddha(true); 
+  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
 
   const roleRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [roleWidths, setRoleWidths] = useState<number[]>(() => new Array(ENTRIES.length).fill(0));

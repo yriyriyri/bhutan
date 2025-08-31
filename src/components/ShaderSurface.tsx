@@ -42,7 +42,7 @@ function useIsDark() {
 }
 
 export default function ShaderSurface() {
-  const { showDragon, showFlags, showParticles, showClouds, isMobile, deviceReady } = useShaderScene();
+  const { showDragon, showFlags, showParticles, showClouds, showBuddha, isMobile, deviceReady } = useShaderScene();
   const pathname = usePathname();
   const isDark = useIsDark();
 
@@ -198,7 +198,8 @@ export default function ShaderSurface() {
     p.setLayerVisibility?.('particles', showParticles);
     p.setLayerVisibility?.('clouds', showClouds);
     p.setLayerVisibility?.('foreground-clouds', showClouds);
-  }, [showDragon, showFlags, showParticles, showClouds]);
+    p.setLayerVisibility?.('buddha', showBuddha); 
+  }, [showDragon, showFlags, showParticles, showClouds, showBuddha]);
 
   useEffect(() => {
     const p = pipelineRef.current;

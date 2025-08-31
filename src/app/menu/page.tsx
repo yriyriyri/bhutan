@@ -23,7 +23,7 @@ function useIsMobile() {
 }
 
 export default function MenuPage() {
-  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha } = useShaderScene();
   const isMobile = useIsMobile();
   const fontSize = isMobile ? MENU_FONT_MOBILE : MENU_FONT_DESKTOP;
 
@@ -32,7 +32,8 @@ export default function MenuPage() {
     setShowFlags(false);
     setShowParticles(true);
     setShowClouds(false);
-  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds]);
+    setShowBuddha(false);
+  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
 
   return (
     <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>

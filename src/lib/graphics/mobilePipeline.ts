@@ -494,6 +494,12 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   foregroundClouds.blendMode = 'normal';
   foregroundClouds.setBlackKey({ low: 0.005, high: 0.01 });
 
+  const buddha = new PublicVideoLayer('buddha', renderer, '/buddha.mp4');
+  buddha.zIndex = 2.5;
+  buddha.opacity = 1.0;
+  buddha.blendMode = 'normal';
+  buddha.setWhiteKey({ low: 0.98, high: 0.99 });
+
   dragon.setParticleParamsExternal({
     ratePerBone: 2,
     speedForMaxRate: 30,
@@ -507,7 +513,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds);
+  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds, buddha);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);

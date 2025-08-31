@@ -26,14 +26,16 @@ function useIsMobile() {
 }
 
 export default function HomePage() {
-  const { setShowDragon, setShowFlags, setShowClouds } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowClouds, setShowParticles, setShowBuddha } = useShaderScene();
   const isMobile = useIsMobile();
 
   useEffect(() => {
     setShowDragon(true);
     setShowFlags(false);
     setShowClouds(true);
-  }, [setShowDragon, setShowFlags, setShowClouds]);
+    setShowParticles(false);
+    setShowBuddha(false);
+  }, [setShowDragon, setShowFlags, setShowClouds, setShowParticles, setShowBuddha]);
 
   return (
     <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>

@@ -18,7 +18,7 @@ const WIDTH_MOBILE_PCT = 80;
 const MOBILE_HEADER_FONT_SIZE_PX = 18;
 
 export default function AboutPage() {
-  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha } = useShaderScene();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -26,7 +26,8 @@ export default function AboutPage() {
     setShowFlags(true);
     setShowParticles(true);
     setShowClouds(false);
-  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds]);
+    setShowBuddha(false);
+  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 768px), (pointer: coarse)');
