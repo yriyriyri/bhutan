@@ -9,6 +9,8 @@ import { useShaderScene } from './ShaderSceneContext';
 import { usePathname } from 'next/navigation';
 import { Roboto_Mono } from 'next/font/google';
 import PixelateLinkImage from './PixelateLinkImage';
+import BrandTypewriterLink from './BrandTypewriterLink'
+
 
 const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
 const HOME_IMG_HEIGHT_PX = 12; 
@@ -320,20 +322,13 @@ export default function ShaderSurface() {
               userSelect: 'none',
             }}
           >
-            <Link
+
+            <BrandTypewriterLink
               href="/"
               className="ui-link"
-              onMouseEnter={() => setHoverTop(s => ({ ...s, btc: true }))}
-              onMouseLeave={() => setHoverTop(s => ({ ...s, btc: false }))}
-              style={{
-                textDecoration: hoverTop.btc ? 'underline' : 'none',
-                textUnderlineOffset: '2px',
-                cursor: 'pointer',
-                fontWeight: pathname === '/' ? 400 : 300,
-              }}
-            >
-              BTC
-            </Link>
+              active={pathname === '/'}
+              stepMs={10} 
+            />
 
             <span aria-hidden="true" style={{ pointerEvents: 'none' }}>-</span>
 
