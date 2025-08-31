@@ -8,8 +8,10 @@ import { createPipeline as createMobilePipeline } from '../lib/graphics/mobilePi
 import { useShaderScene } from './ShaderSceneContext';
 import { usePathname } from 'next/navigation';
 import { Roboto_Mono } from 'next/font/google';
+import PixelateLinkImage from './PixelateLinkImage';
 
 const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
+const HOME_IMG_HEIGHT_PX = 12; 
 
 function useIsDark() {
   const [isDark, setIsDark] = useState(false);
@@ -64,11 +66,7 @@ export default function ShaderSurface() {
     if (meta) meta.content = inv ? '#000000' : '#ffffff';
   };
 
-  const [hoverTop, setHoverTop] = useState({
-    about: false,
-    leadership: false,
-    invert: false,
-  });
+  const [hoverTop, setHoverTop] = useState({ about: false, leadership: false, invert: false });
 
   useEffect(() => {
     if (!deviceReady) return;
@@ -212,12 +210,13 @@ export default function ShaderSurface() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!deviceReady || !isMobile) return;
+    const p = pipelineRef.current;
+    if (!p || !deviceReady || !isMobile) return;
     let done = false;
     const unlock = () => {
       if (done) return;
       done = true;
-      (pipelineRef.current as any)?.unlockMedia?.();
+      (p as any)?.unlockMedia?.();
     };
     window.addEventListener('pointerdown', unlock, { once: true });
     window.addEventListener('touchend',  unlock, { once: true });
@@ -240,6 +239,45 @@ export default function ShaderSurface() {
           pointerEvents: 'none',
         }}
       />
+
+      {!isMobile && pathname !== '/' && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 15,
+            left: 12,
+            display: 'flex',
+            gap: 40,
+            zIndex: 2,
+            pointerEvents: 'auto',
+          }}
+        >
+          <PixelateLinkImage
+            href="/"
+            src="/bhutan.png"
+            alt="Home: Bhutan"
+            height={HOME_IMG_HEIGHT_PX}
+            style={{ display: 'inline-block', cursor: 'pointer' }}
+            tintToTheme
+          />
+          <PixelateLinkImage
+            href="/"
+            src="/treasury.png"
+            alt="Home: Treasury"
+            height={HOME_IMG_HEIGHT_PX}
+            style={{ display: 'inline-block', cursor: 'pointer' }}
+            tintToTheme
+          />
+          <PixelateLinkImage
+            href="/"
+            src="/company.png"
+            alt="Home: Company"
+            height={HOME_IMG_HEIGHT_PX}
+            style={{ display: 'inline-block', cursor: 'pointer' }}
+            tintToTheme
+          />
+        </div>
+      )}
 
       {!isMobile && (
         <>
@@ -356,7 +394,7 @@ export default function ShaderSurface() {
                 cursor: 'pointer',
                 textDecoration: hoverTop.invert ? 'underline' : 'none',
                 textUnderlineOffset: '2px',
-                fontWeight: 300, 
+                fontWeight: 300,
               }}
             >
               invert
