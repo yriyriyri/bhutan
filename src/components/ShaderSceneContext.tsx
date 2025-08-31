@@ -51,23 +51,20 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
   const [showParticles, setShowParticles] = useState(true);
   const [showClouds, setShowClouds] = useState(true);
 
-  // Read the early "device-boot" result if present (set in app/layout via <Script beforeInteractive>)
   const bootHasValue =
     typeof window !== 'undefined' && (window as any).__IS_MOBILE__ !== undefined;
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false; // SSR placeholder; we finalize on client
+    if (typeof window === 'undefined') return false; 
     if (bootHasValue) return !!(window as any).__IS_MOBILE__;
-    // Fallback: quick sync guess (safe on client)
     return detectMobile();
   });
 
   const [deviceReady, setDeviceReady] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    return bootHasValue; // ready immediately if boot flag exists
+    return bootHasValue; 
   });
 
-  // If the boot flag wasn't available, finalize once on mount with detectMobile()
   useEffect(() => {
     if (deviceReady) return;
     const v = detectMobile();
@@ -75,7 +72,6 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
     setDeviceReady(true);
   }, [deviceReady]);
 
-  // Keep <html data-device="mobile|desktop"> in sync (useful for CSS/debugging)
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.dataset.device = isMobile ? 'mobile' : 'desktop';

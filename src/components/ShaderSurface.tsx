@@ -1,15 +1,48 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import Link from 'next/link';
 import { createPipeline as createDesktopPipeline, type Pipeline } from '../lib/graphics/pipeline';
 import { createPipeline as createMobilePipeline } from '../lib/graphics/mobilePipeline';
 import { useShaderScene } from './ShaderSceneContext';
 import { usePathname } from 'next/navigation';
+import { Roboto_Mono } from 'next/font/google';
+
+const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
+    const compute = () => {
+      const explicitDark = root.classList.contains('theme-dark') || body.classList.contains('theme-dark');
+      const explicitLight = root.classList.contains('theme-light') || body.classList.contains('theme-light');
+      if (explicitDark) return true;
+      if (explicitLight) return false;
+      return !!mql?.matches;
+    };
+    const update = () => setIsDark(compute());
+    update();
+    const mo = new MutationObserver(update);
+    mo.observe(root, { attributes: true, attributeFilter: ['class'] });
+    mo.observe(body, { attributes: true, attributeFilter: ['class'] });
+    const onChange = () => setIsDark(compute());
+    mql?.addEventListener?.('change', onChange);
+    return () => {
+      mo.disconnect();
+      mql?.removeEventListener?.('change', onChange);
+    };
+  }, []);
+  return isDark;
+}
 
 export default function ShaderSurface() {
   const { showDragon, showFlags, showParticles, showClouds, isMobile, deviceReady } = useShaderScene();
   const pathname = usePathname();
+  const isDark = useIsDark();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
@@ -18,6 +51,21 @@ export default function ShaderSurface() {
   const lastPathRef = useRef<string | null>(null);
   const modeRef = useRef<'mobile' | 'desktop' | null>(null);
   const rafResizeRef = useRef<number | null>(null);
+
+  const toggleInvertUI = () => {
+    (pipelineRef.current as any)?.toggleInvert?.();
+    const inv = (pipelineRef.current as any)?.isInvertEnabled?.() ?? false;
+    document.body.classList.toggle('theme-dark', inv);
+    document.body.classList.toggle('theme-light', !inv);
+    const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
+    if (meta) meta.content = inv ? '#000000' : '#ffffff';
+  };
+
+  const [hoverTop, setHoverTop] = useState({
+    about: false,
+    leadership: false,
+    invert: false,
+  });
 
   useEffect(() => {
     if (!deviceReady) return;
@@ -122,12 +170,7 @@ export default function ShaderSurface() {
         pipelineRef.current?.toggleAscii();
       } else if (k === 'i') {
         e.preventDefault();
-        (pipelineRef.current as any)?.toggleInvert?.();
-        const inv = (pipelineRef.current as any)?.isInvertEnabled?.() ?? false;
-        document.body.classList.toggle('theme-dark', inv);
-        document.body.classList.toggle('theme-light', !inv);
-        const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
-        if (meta) meta.content = inv ? '#000000' : '#ffffff';
+        toggleInvertUI();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -143,7 +186,7 @@ export default function ShaderSurface() {
       pipeline.dispose();
       pipelineRef.current = null;
     };
-  }, [deviceReady, isMobile]); 
+  }, [deviceReady, isMobile]);
 
   useEffect(() => {
     const p = pipelineRef.current;
@@ -167,17 +210,14 @@ export default function ShaderSurface() {
 
   useEffect(() => {
     if (!deviceReady || !isMobile) return;
-  
     let done = false;
     const unlock = () => {
       if (done) return;
       done = true;
       (pipelineRef.current as any)?.unlockMedia?.();
     };
-  
     window.addEventListener('pointerdown', unlock, { once: true });
     window.addEventListener('touchend',  unlock, { once: true });
-  
     return () => {
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('touchend',  unlock);
@@ -185,16 +225,142 @@ export default function ShaderSurface() {
   }, [deviceReady, isMobile]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100svw',
-        height: '100svh',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100svw',
+          height: '100svh',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {!isMobile && (
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 20,
+              background: isDark
+                ? 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0))'
+                : 'linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0))',
+              zIndex: 1,
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+          />
+
+          <div
+            className={`${m.className} ui-text`}
+            style={{
+              position: 'fixed',
+              left: 12,
+              bottom: 5,
+              fontSize: 10,
+              lineHeight: 1,
+              zIndex: 2,
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+          >
+            © 2025 The Bhutan Treasury Company. All Rights Reserved.
+          </div>
+
+          <div
+            className={`${m.className} ui-text`}
+            style={{
+              position: 'fixed',
+              right: 12,
+              bottom: 5,
+              fontSize: 10,
+              lineHeight: 1,
+              zIndex: 2,
+              pointerEvents: 'none',
+              userSelect: 'none',
+              display: 'flex',
+              gap: 18,
+            }}
+          >
+            <span>contact</span>
+            <span>legal</span>
+            <span>terms of use</span>
+            <span>privacy notice</span>
+          </div>
+
+          <div
+            className={`${m.className} ui-text`}
+            style={{
+              position: 'fixed',
+              top: 10,
+              right: 12,
+              display: 'flex',
+              gap: 25,
+              fontSize: 15,
+              lineHeight: 1,
+              zIndex: 2,
+              pointerEvents: 'auto',
+              userSelect: 'none',
+            }}
+          >
+            <Link
+              href="/about"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, about: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, about: false }))}
+              style={{
+                textDecoration: hoverTop.about ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/about' ? 400 : 300,
+              }}
+            >
+              about
+            </Link>
+
+            <Link
+              href="/team"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, leadership: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, leadership: false }))}
+              style={{
+                textDecoration: hoverTop.leadership ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/team' ? 400 : 300,
+              }}
+            >
+              team
+            </Link>
+
+            <button
+              className={`${m.className} ui-link`}
+              onClick={toggleInvertUI}
+              onMouseEnter={() => setHoverTop(s => ({ ...s, invert: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, invert: false }))}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                fontSize: 15,
+                lineHeight: 1,
+                cursor: 'pointer',
+                textDecoration: hoverTop.invert ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                fontWeight: 300, 
+              }}
+            >
+              invert
+            </button>
+          </div>
+        </>
+      )}
+    </>
   );
 }
