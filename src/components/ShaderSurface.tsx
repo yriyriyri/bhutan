@@ -53,8 +53,11 @@ export default function ShaderSurface() {
   const rafResizeRef = useRef<number | null>(null);
 
   const toggleInvertUI = () => {
-    (pipelineRef.current as any)?.toggleInvert?.();
-    const inv = (pipelineRef.current as any)?.isInvertEnabled?.() ?? false;
+    const pipeline = pipelineRef.current as any;
+    if (!pipeline) return;
+    pipeline.startBurn?.({ duration: 0.9, maxOpacity: 1, fadeIn: 0.9 });
+    pipeline.toggleInvert?.();
+    const inv = pipeline.isInvertEnabled?.() ?? false;
     document.body.classList.toggle('theme-dark', inv);
     document.body.classList.toggle('theme-light', !inv);
     const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
