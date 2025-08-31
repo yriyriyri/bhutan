@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useShaderScene } from './ShaderSceneContext'; 
+import { useShaderScene } from './ShaderSceneContext';
 
 type Props = {
   href: string;
@@ -12,7 +12,7 @@ type Props = {
   height: number;
   enabled?: boolean;
   style?: React.CSSProperties;
-  tintToTheme?: boolean; 
+  tintToTheme?: boolean;
 };
 
 function isThemeDark(): boolean {
@@ -28,9 +28,13 @@ export default function PixelateLinkImage({
   style,
   tintToTheme = false,
 }: Props) {
-  const { isMobile } = useShaderScene(); 
+  const { isMobile } = useShaderScene();
 
-  const [themeDark, setThemeDark] = useState<boolean>(false);
+  // Ensure SSR and first client render match
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const [themeDark, setThemeDark] = useState(false);
   useEffect(() => {
     const update = () => setThemeDark(isThemeDark());
     update();
@@ -58,9 +62,7 @@ export default function PixelateLinkImage({
     ctx.imageSmoothingEnabled = true;
     (ctx as any).imageSmoothingQuality = 'high';
 
-    const fg =
-      getComputedStyle(document.body).getPropertyValue('--fg').trim() ||
-      '#d0d0d0';
+    const fg = getComputedStyle(document.body).getPropertyValue('--fg').trim() || '#d0d0d0';
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = fg;
@@ -100,7 +102,8 @@ export default function PixelateLinkImage({
       cvs.height = H * dpr;
 
       const base = document.createElement('canvas');
-      base.width = W; base.height = H;
+      base.width = W;
+      base.height = H;
       const bctx = base.getContext('2d')!;
       bctx.imageSmoothingEnabled = true;
       (bctx as any).imageSmoothingQuality = 'high';
@@ -140,18 +143,27 @@ export default function PixelateLinkImage({
     />
   );
 
-  const shouldLink = isMobile || href !== '/menu';
-
-  if (!shouldLink) {
-    return (
-      <span aria-label={alt} style={{ display: 'inline-block', ...style }}>
-        {content}
-      </span>
-    );
-  }
+  const disableNav = mounted ? (!isMobile && href === '/menu') : false;
 
   return (
-    <Link href={href} aria-label={alt} style={{ display: 'inline-block', ...style }}>
+    <Link
+      href={href}
+      aria-label={alt}
+      prefetch={false}
+      onClick={(e) => {
+        if (disableNav) e.preventDefault();
+      }}
+      onKeyDown={(e) => {
+        if (disableNav && (e.key === 'Enter' || e.key === ' ')) e.preventDefault();
+      }}
+      aria-disabled={disableNav ? 'true' : undefined}
+      tabIndex={disableNav ? -1 : undefined}
+      style={{
+        display: 'inline-block',
+        cursor: disableNav ? 'default' : 'pointer',
+        ...(style || {}),
+      }}
+    >
       {content}
     </Link>
   );

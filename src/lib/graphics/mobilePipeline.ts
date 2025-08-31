@@ -494,7 +494,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   foregroundClouds.blendMode = 'normal';
   foregroundClouds.setBlackKey({ low: 0.005, high: 0.01 });
 
-  const buddha = new PublicVideoLayer('buddha', renderer, '/buddha.mp4');
+  const buddha = new BottomAnchoredPublicVideoLayer('buddha', renderer, '/buddhamobile.mp4');
   buddha.zIndex = 2.5;
   buddha.opacity = 1.0;
   buddha.blendMode = 'normal';

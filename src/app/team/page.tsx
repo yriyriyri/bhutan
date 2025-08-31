@@ -12,6 +12,7 @@ const H_OFFSET_DESKTOP = 120;
 const H_OFFSET_MOBILE  = 60;
 const V_GAP = 80;
 const FONT_SIZE_PX = 11;
+const MOBILE_CENTER_LIFT_DVH = 10; 
 
 const ENTRIES = [
   { name: 'Oscar Paterson', role: 'Dev, Voxl Studios' },
@@ -93,7 +94,7 @@ export default function TeamPage() {
         style={{
           position: 'absolute',
           left: '50%',
-          top: '50%',
+          top: isMobile ? `calc(50% - ${MOBILE_CENTER_LIFT_DVH}dvh)` : '50%', 
           transform: 'translate(-50%, -50%)',
           fontSize: FONT_SIZE_PX,
           lineHeight: 1.2,

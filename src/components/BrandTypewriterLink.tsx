@@ -56,7 +56,6 @@ export default function BrandTypewriterLink({
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 
-  // underline + expansion ONLY on real pointer hover
   const [hover, setHover] = useState(false);
 
   const [step, setStep] = useState(0);
@@ -172,7 +171,6 @@ export default function BrandTypewriterLink({
       className={`${m.className} ${className ?? ''}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      // no focus handlers -> focus will NOT trigger underline/expand
       style={{
         cursor: 'pointer',
         textDecoration: underlineOnHover && hover ? 'underline' : 'none',

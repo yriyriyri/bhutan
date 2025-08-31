@@ -75,6 +75,11 @@ export default function ShaderSurface() {
     invert: false,
   });
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!deviceReady) return;
     const mode: 'mobile' | 'desktop' = isMobile ? 'mobile' : 'desktop';
@@ -248,7 +253,7 @@ export default function ShaderSurface() {
         }}
       />
   
-      {!isMobile && (
+      {mounted && !isMobile && (
         <>
           <div
             style={{
