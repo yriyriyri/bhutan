@@ -468,12 +468,12 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   let layers: Layer[] = [];
 
   const flag = new BottomAnchoredPublicVideoLayer('flag', renderer, '/flagsFD.mp4');
-  flag.zIndex = 4;
+  flag.zIndex = -4;
   flag.opacity = 1;
   flag.blendMode = 'normal';
   flag.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const backgroundFlag = new BottomAnchoredPublicVideoLayer('background-flag', renderer, '/flagsBD.mp4');
+  const backgroundFlag = new BottomAnchoredPublicVideoLayer('background-flag', renderer, '/newflags.mp4');
   backgroundFlag.zIndex = 2;
   backgroundFlag.opacity = 1.0;
   backgroundFlag.blendMode = 'normal'; 
