@@ -40,10 +40,10 @@ export default function TeamPage() {
 
   useEffect(() => {
     setShowDragon(false);
-    setShowFlags(false);
+    setShowFlags(true);
     setShowParticles(true);
     setShowClouds(false);
-    setShowBuddha(true); 
+    setShowBuddha(false);
     setShowStupa(false);
   }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
 

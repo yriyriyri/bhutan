@@ -10,7 +10,7 @@ const m400 = Roboto_Mono({ weight: '400', subsets: ['latin'] });
 
 const BODY_FONT_SIZE_DESKTOP_PX = 14;
 const WIDTH_DESKTOP_PCT = 50;
-const CENTER_OFFSET_DESKTOP_PX = 100;
+const CENTER_OFFSET_DESKTOP_PX = 0;
 
 const TOP_OFFSET_MOBILE_PX = 200;
 const BODY_FONT_SIZE_MOBILE_PX = 10;
@@ -23,10 +23,10 @@ export default function AboutPage() {
 
   useEffect(() => {
     setShowDragon(false);
-    setShowFlags(true);
+    setShowFlags(false);
     setShowParticles(true);
     setShowClouds(false);
-    setShowBuddha(false);
+    setShowBuddha(true); 
     setShowStupa(false);
   }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
 
