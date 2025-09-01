@@ -26,7 +26,7 @@ function useIsMobile() {
 }
 
 export default function HomePage() {
-  const { setShowDragon, setShowFlags, setShowClouds, setShowParticles, setShowBuddha } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowClouds, setShowParticles, setShowBuddha, setShowStupa } = useShaderScene();
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function HomePage() {
     setShowClouds(true);
     setShowParticles(false);
     setShowBuddha(false);
+    setShowStupa(false);
   }, [setShowDragon, setShowFlags, setShowClouds, setShowParticles, setShowBuddha]);
 
   return (

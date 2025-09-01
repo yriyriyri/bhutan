@@ -18,7 +18,7 @@ const WIDTH_MOBILE_PCT = 80;
 const MOBILE_HEADER_FONT_SIZE_PX = 18;
 
 export default function AboutPage() {
-  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha } = useShaderScene();
+  const { setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha, setShowStupa } = useShaderScene();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -27,6 +27,7 @@ export default function AboutPage() {
     setShowParticles(true);
     setShowClouds(false);
     setShowBuddha(false);
+    setShowStupa(false);
   }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
 
   useEffect(() => {

@@ -1,0 +1,60 @@
+'use client';
+
+import { useEffect } from 'react';
+import { Roboto_Mono } from 'next/font/google';
+import { useShaderScene } from '../../components/ShaderSceneContext'; 
+
+const m = Roboto_Mono({ weight: '300', subsets: ['latin'] });
+
+export default function ContactPage() {
+  const {
+    setShowDragon,
+    setShowFlags,
+    setShowParticles,
+    setShowClouds,
+    setShowBuddha,
+    setShowStupa,
+  } = useShaderScene();
+
+  useEffect(() => {
+    setShowDragon(false);
+    setShowFlags(false);
+    setShowParticles(false);
+    setShowClouds(false);
+    setShowBuddha(false);
+    setShowStupa(true);
+  }, [
+    setShowDragon,
+    setShowFlags,
+    setShowParticles,
+    setShowClouds,
+    setShowBuddha,
+    setShowStupa,
+  ]);
+
+  return (
+    <div
+      className={m.className}
+      style={{
+        height: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        className="ui-text"
+        style={{
+          maxWidth: '50vw',
+          textAlign: 'center',
+          fontSize: 13,
+          lineHeight: 1.3,
+          fontWeight: 300,
+          userSelect: 'text',
+        }}
+      >
+        example@bhutantreasurycompany.com
+      </div>
+    </div>
+  );
+}

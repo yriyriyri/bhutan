@@ -26,6 +26,9 @@ type Ctx = {
   showBuddha: boolean; 
   setShowBuddha: (v: boolean) => void; 
 
+  showStupa: boolean;
+  setShowStupa: (v: boolean) => void;
+
   isMobile: boolean;
 
   deviceReady: boolean;
@@ -42,6 +45,8 @@ const ShaderSceneContext = createContext<Ctx>({
   setShowClouds: () => {},
   showBuddha: false, 
   setShowBuddha: () => {}, 
+  showStupa: false, 
+  setShowStupa: () => {}, 
   isMobile: false,
   deviceReady: false,
 });
@@ -56,6 +61,7 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
   const [showParticles, setShowParticles] = useState(true);
   const [showClouds, setShowClouds] = useState(true);
   const [showBuddha, setShowBuddha] = useState(false);
+  const [showStupa, setShowStupa] = useState(false);
 
   const bootHasValue =
     typeof window !== 'undefined' && (window as any).__IS_MOBILE__ !== undefined;
@@ -95,10 +101,12 @@ export function ShaderSceneProvider({ children }: { children: ReactNode }) {
       setShowClouds,
       showBuddha, 
       setShowBuddha,
+      showStupa, 
+      setShowStupa,
       isMobile,
       deviceReady,
     }),
-    [showDragon, showFlags, showParticles, showClouds, showBuddha, isMobile, deviceReady]
+    [showDragon, showFlags, showParticles, showClouds, showBuddha, showStupa, isMobile, deviceReady]
   );
 
   return (
