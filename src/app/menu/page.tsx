@@ -34,7 +34,7 @@ export default function MenuPage() {
     setShowClouds(false);
     setShowBuddha(false);
     setShowStupa(false);
-  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha]);
+  }, [setShowDragon, setShowFlags, setShowParticles, setShowClouds, setShowBuddha, setShowStupa]);
 
   return (
     <div style={{ height: '100dvh', position: 'relative', overflow: 'clip' }}>
@@ -89,6 +89,18 @@ export default function MenuPage() {
             }}
           >
             team
+          </Link>
+
+          <Link
+            href="/contact"
+            className="ui-link"
+            style={{
+              fontSize,
+              cursor: 'pointer',
+              textDecoration: isMobile ? 'none' : undefined,
+            }}
+          >
+            contact
           </Link>
         </div>
       </nav>

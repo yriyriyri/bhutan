@@ -500,7 +500,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   buddha.blendMode = 'normal';
   buddha.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const stupa = new PublicVideoLayer('stupa', renderer, '/stupa.mp4');
+  const stupa = new BottomAnchoredPublicVideoLayer('stupa', renderer, '/stupamobile.mp4');
   stupa.zIndex = 2.5;
   stupa.opacity = 1.0;
   stupa.blendMode = 'normal';
