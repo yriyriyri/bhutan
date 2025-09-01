@@ -19,7 +19,7 @@ export default function ContactPage() {
   useEffect(() => {
     setShowDragon(false);
     setShowFlags(false);
-    setShowParticles(false);
+    setShowParticles(true);
     setShowClouds(false);
     setShowBuddha(false);
     setShowStupa(true);
@@ -40,6 +40,9 @@ export default function ContactPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        position: 'relative',
+        pointerEvents: 'none',
+        zIndex: 2,
       }}
     >
       <div
@@ -47,7 +50,7 @@ export default function ContactPage() {
         style={{
           maxWidth: '50vw',
           textAlign: 'center',
-          fontSize: 11,
+          fontSize: 10,
           lineHeight: 1.3,
           fontWeight: 300,
           userSelect: 'text',

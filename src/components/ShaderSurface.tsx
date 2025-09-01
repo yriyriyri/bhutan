@@ -73,6 +73,10 @@ export default function ShaderSurface() {
     about: false,
     leadership: false,
     invert: false,
+    contact: false,
+    legal: false,
+    terms: false,
+    privacy: false,
   });
 
   const [mounted, setMounted] = useState(false);
@@ -300,18 +304,76 @@ export default function ShaderSurface() {
               fontSize: 10,
               lineHeight: 1,
               zIndex: 2,
-              pointerEvents: 'none',
+              pointerEvents: 'auto', 
               userSelect: 'none',
               display: 'flex',
               fontWeight: 300,
               gap: 18,
             }}
           >
-            <span style={{ marginRight: 48 }}>© 2025 The Bhutan Treasury Company. All Rights Reserved.</span>
-            <span>contact</span>
-            <span>legal</span>
-            <span>terms of use</span>
-            <span>privacy notice</span>
+            <span style={{ marginRight: 48 }}>
+              © 2025 The Bhutan Treasury Company. All Rights Reserved.
+            </span>
+
+            <Link
+              href="/contact"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, contact: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, contact: false }))}
+              style={{
+                textDecoration: hoverTop.contact ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/contact' ? 400 : 300,
+              }}
+            >
+              contact
+            </Link>
+
+            <Link
+              href="/legal"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, legal: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, legal: false }))}
+              style={{
+                textDecoration: hoverTop.legal ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/legal' ? 400 : 300,
+              }}
+            >
+              legal
+            </Link>
+
+            <Link
+              href="/terms"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, terms: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, terms: false }))}
+              style={{
+                textDecoration: hoverTop.terms ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/terms' ? 400 : 300,
+              }}
+            >
+              terms of use
+            </Link>
+
+            <Link
+              href="/privacy"
+              className="ui-link"
+              onMouseEnter={() => setHoverTop(s => ({ ...s, privacy: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, privacy: false }))}
+              style={{
+                textDecoration: hoverTop.privacy ? 'underline' : 'none',
+                textUnderlineOffset: '2px',
+                cursor: 'pointer',
+                fontWeight: pathname === '/privacy' ? 400 : 300,
+              }}
+            >
+              privacy notice
+            </Link>
           </div>
   
           <div
