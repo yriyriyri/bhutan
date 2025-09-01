@@ -152,6 +152,7 @@ export default function ShaderSurface() {
     pipeline.setLayerVisibility?.('clouds', showClouds);
     pipeline.setLayerVisibility?.('foreground-clouds', showClouds);
     pipeline.setLayerVisibility?.('buddha', showBuddha);
+    pipeline.setLayerVisibility?.('prayer', showBuddha);
     pipeline.setLayerVisibility?.('stupa', showStupa);
 
     let raf = 0;
@@ -217,6 +218,7 @@ export default function ShaderSurface() {
     p.setLayerVisibility?.('clouds', showClouds);
     p.setLayerVisibility?.('foreground-clouds', showClouds);
     p.setLayerVisibility?.('buddha', showBuddha); 
+    p.setLayerVisibility?.('prayer', showBuddha); 
     p.setLayerVisibility?.('stupa', showStupa);
   }, [showDragon, showFlags, showParticles, showClouds, showBuddha, showStupa]);
 

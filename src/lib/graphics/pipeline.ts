@@ -6,6 +6,7 @@ import { CubeSceneLayer } from './layers/CubeSceneLayer';
 import { DragonSceneLayer } from './layers/DragonSceneLayer';
 import { PublicVideoLayer } from './layers/PublicVideoLayer';
 import { BottomAnchoredPublicVideoLayer } from './layers/BottomAnchoredPublicVideoLayer';
+import { TopAnchoredPublicVideoLayer } from './layers/TopAnchoredPublicVideoLayer';
 import { makeTibetanAsciiAtlas, showAtlasDebug, makeAsciiAtlas } from '@/lib/graphics/asciiAtlas';
 import FULLSCREEN_VERT from './shaders/fullscreen.vert.glsl';
 import COPY_FRAG from './shaders/copy.frag.glsl';
@@ -512,6 +513,12 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   stupa.blendMode = 'normal';
   stupa.setWhiteKey({ low: 0.98, high: 0.99 });
 
+  const prayer = new TopAnchoredPublicVideoLayer('prayer', renderer, '/prayer.mp4');
+  prayer.zIndex = 3;
+  prayer.opacity = 1.0;
+  prayer.blendMode = 'normal';
+  prayer.setWhiteKey({ low: 0.98, high: 0.99 });
+
   dragon.setParticleParamsExternal({
     ratePerBone: 2,
     speedForMaxRate: 30,
@@ -525,7 +532,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds, buddha, stupa);
+  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds, buddha, stupa, prayer);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
