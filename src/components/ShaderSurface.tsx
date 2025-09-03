@@ -351,7 +351,7 @@ export default function ShaderSurface() {
               left: 12,
               display: 'flex',
               alignItems: 'center',
-              gap: 30,
+              gap: 35,
               fontSize: 15,
               lineHeight: 1,
               zIndex: 2,
@@ -388,6 +388,7 @@ export default function ShaderSurface() {
               onMouseLeave={() => setHoverTop(s => ({ ...s, about: false }))}
               style={{
                 cursor: 'pointer',
+                // marginLeft: 10,
                 opacity: pathname === '/about' || hoverTop.about ? 1 : 0.6,
                 transition: 'opacity 120ms linear',
                 fontWeight: 400,
@@ -403,6 +404,7 @@ export default function ShaderSurface() {
               onMouseLeave={() => setHoverTop(s => ({ ...s, leadership: false }))}
               style={{
                 cursor: 'pointer',
+                // marginLeft: 10,
                 opacity: pathname === '/leadership' || hoverTop.leadership ? 1 : 0.6,
                 transition: 'opacity 120ms linear',
                 fontWeight: 400,
