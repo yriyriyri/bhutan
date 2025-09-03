@@ -111,7 +111,6 @@ export default function InvertLogoButton({
   const handleClick = () => {
     if (!ready || playingRef.current) return;
 
-    // We always animate *toward* the next active state:
     const goalActive = !active;
     playingRef.current = goalActive ? 1 : -1;
     lastFrameTimeRef.current = 0;
