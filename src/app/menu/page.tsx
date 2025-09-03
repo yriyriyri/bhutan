@@ -80,7 +80,7 @@ export default function MenuPage() {
           </Link>
 
           <Link
-            href="/team"
+            href="/leadership"
             className="ui-link"
             style={{
               fontSize,
@@ -88,7 +88,7 @@ export default function MenuPage() {
               textDecoration: isMobile ? 'none' : undefined,
             }}
           >
-            team
+            leadership
           </Link>
 
           <Link
