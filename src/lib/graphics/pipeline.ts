@@ -520,7 +520,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   prayer.setWhiteKey({ low: 0.98, high: 0.99 });
 
   dragon.setParticleParamsExternal({
-    ratePerBone: 2,
+    ratePerBone: 1,
     speedForMaxRate: 30,
     inheritFactor: 1,
     jitter: 0.9,
@@ -528,7 +528,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     gravity: [1, 0, 0],
     sizeMin: 0.005, sizeMax: 0.03,
     lifeMin: 3, lifeMax: 5,
-    opacity: 0.05,
+    opacity: 0.9,
     minRateBaseline: 0 
   });
   
