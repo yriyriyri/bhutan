@@ -27,18 +27,23 @@ export default function ShaderSurface() {
   const lastPathRef = useRef<string | null>(null);
   const modeRef = useRef<'mobile' | 'desktop' | null>(null);
   const rafResizeRef = useRef<number | null>(null);
+  const [invertActive, setInvertActive] = useState(false);
+
 
   const toggleInvertUI = () => {
     const pipeline = pipelineRef.current as any;
     if (!pipeline) return;
     pipeline.startBurn?.({ duration: 0.9, maxOpacity: 1, fadeIn: 0.9 });
     pipeline.toggleInvert?.();
-    const inv = pipeline.isInvertEnabled?.() ?? false;
-    document.body.classList.toggle('theme-dark', inv);
-    document.body.classList.toggle('theme-light', !inv);
-    const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
-    if (meta) meta.content = inv ? '#000000' : '#ffffff';
-  };
+    setInvertActive(prev => {
+      const next = !prev;
+      document.body.classList.toggle('theme-dark', next);
+      document.body.classList.toggle('theme-light', !next);
+      const meta = document.querySelector('meta#meta-theme-color') as HTMLMetaElement | null;
+      if (meta) meta.content = next ? '#000000' : '#ffffff';
+      return next;
+    });
+  }
 
   const [hoverTop, setHoverTop] = useState({
     btc: false,
@@ -54,6 +59,16 @@ export default function ShaderSurface() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
+    const explicitDark  = root.classList.contains('theme-dark') || body.classList.contains('theme-dark');
+    const explicitLight = root.classList.contains('theme-light') || body.classList.contains('theme-light');
+    const initialDark = explicitDark || (!explicitLight && !!mql?.matches);
+    setInvertActive(initialDark);
   }, []);
 
   useEffect(() => {
@@ -418,6 +433,7 @@ export default function ShaderSurface() {
               invert
             </button> */}
             <InvertLogoButton
+              active={invertActive}
               onToggle={toggleInvertUI}
               className={`${wb.className} ui-link ui-link--no-underline`}
               style={{ marginLeft: 'auto' }}

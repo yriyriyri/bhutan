@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Props = {
+  active?: boolean;
   onToggle?: () => void;
   className?: string;
   style?: React.CSSProperties;
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export default function InvertLogoButton({
+  active = false,
   onToggle,
   className,
   style,
@@ -31,7 +33,7 @@ export default function InvertLogoButton({
   const [hover, setHover] = useState(false);
   const [ready, setReady] = useState(false);
   const [idx, setIdx] = useState(0);
-  const playingRef = useRef<false | 1 | -1>(false); 
+  const playingRef = useRef<false | 1 | -1>(false);
   const lastFrameTimeRef = useRef(0);
   const rafRef = useRef<number | null>(null);
 
@@ -45,6 +47,7 @@ export default function InvertLogoButton({
     return list;
   }, [folder, basePath, frameCount, startIndex, pad]);
 
+  // Preload frames
   useEffect(() => {
     let cancelled = false;
     Promise.all(
@@ -63,6 +66,7 @@ export default function InvertLogoButton({
     return () => { cancelled = true; };
   }, [paths]);
 
+  // Animation loop
   useEffect(() => {
     const frameMs = 1000 / Math.max(1, fps);
 
@@ -78,7 +82,7 @@ export default function InvertLogoButton({
       const elapsed = t - lastFrameTimeRef.current;
       if (elapsed < frameMs) return;
 
-      lastFrameTimeRef.current = t - (elapsed - frameMs); 
+      lastFrameTimeRef.current = t - (elapsed - frameMs);
       const dir = playingRef.current;
       setIdx(prev => {
         const next = prev + dir;
@@ -98,12 +102,18 @@ export default function InvertLogoButton({
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [fps, paths.length]);
 
+  useEffect(() => {
+    if (!ready) return;
+    if (playingRef.current) return;
+    setIdx(active ? paths.length - 1 : 0);
+  }, [active, ready, paths.length]);
+
   const handleClick = () => {
     if (!ready || playingRef.current) return;
 
-    const atStart = idx <= 0;
-    const atEnd = idx >= paths.length - 1;
-    playingRef.current = atStart ? 1 : atEnd ? -1 : (idx < paths.length / 2 ? 1 : -1);
+    // We always animate *toward* the next active state:
+    const goalActive = !active;
+    playingRef.current = goalActive ? 1 : -1;
     lastFrameTimeRef.current = 0;
 
     onToggle?.();
@@ -128,7 +138,7 @@ export default function InvertLogoButton({
         alignItems: 'center',
         justifyContent: 'center',
         cursor: ready ? 'pointer' : 'default',
-        opacity: hover ? 1 : 0.6,
+        opacity: hover ? 1 : 0.9,
         transition: 'opacity 120ms linear, transform 200ms ease',
         transform: hover ? 'scale(1.05)' : 'none',
         ...style,
