@@ -397,18 +397,18 @@ export default function ShaderSurface() {
             </Link>
 
             <Link
-              href="/team"
+              href="/leadership"
               className="ui-link ui-link--no-underline"
               onMouseEnter={() => setHoverTop(s => ({ ...s, leadership: true }))}
               onMouseLeave={() => setHoverTop(s => ({ ...s, leadership: false }))}
               style={{
                 cursor: 'pointer',
-                opacity: pathname === '/team' || hoverTop.leadership ? 1 : 0.6,
+                opacity: pathname === '/leadership' || hoverTop.leadership ? 1 : 0.6,
                 transition: 'opacity 120ms linear',
                 fontWeight: 400,
               }}
             >
-              team
+              leadership
             </Link>
 
             {/* <button

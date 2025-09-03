@@ -47,7 +47,6 @@ export default function InvertLogoButton({
     return list;
   }, [folder, basePath, frameCount, startIndex, pad]);
 
-  // Preload frames
   useEffect(() => {
     let cancelled = false;
     Promise.all(
@@ -66,7 +65,6 @@ export default function InvertLogoButton({
     return () => { cancelled = true; };
   }, [paths]);
 
-  // Animation loop
   useEffect(() => {
     const frameMs = 1000 / Math.max(1, fps);
 
