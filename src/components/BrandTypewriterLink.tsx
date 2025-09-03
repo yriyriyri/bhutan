@@ -25,7 +25,7 @@ export default function BrandTypewriterLink({
   className,
   style,
   active = false,
-  targetText = 'Bhutan Treasury Company',
+  targetText = 'BHUTAN TREASURY COMPANY',
   initials = 'BTC',
   stepMs = 10,
   scrambleMs = 5,
@@ -64,7 +64,7 @@ export default function BrandTypewriterLink({
   const lastTickRef = useRef<number>(0);
   const dirRef = useRef<1 | -1>(1);
 
-  const density = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const density = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   // force paints during scramble
   const [, setPhaseTick] = useState(0);
