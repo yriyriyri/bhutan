@@ -128,7 +128,7 @@ export default function InvertLogoButton({
         alignItems: 'center',
         justifyContent: 'center',
         cursor: ready ? 'pointer' : 'default',
-        opacity: hover ? 1 : 0.6,
+        opacity: hover ? 1 : 1,
         transition: 'opacity 120ms linear, transform 200ms ease',
         transform: hover ? 'scale(1.05)' : 'none',
         ...style,

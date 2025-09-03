@@ -423,7 +423,7 @@ export default function ShaderSurface() {
               style={{ marginLeft: 'auto' }}
               folder="/coin"
               basePath="coin_"
-              frameCount={11}
+              frameCount={20}
               pad={4}
               fps={30}
               sizePx={30}
