@@ -16,39 +16,9 @@ const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
 const wb = Workbench({ subsets: ['latin'], weight: '400' });
 const HOME_IMG_HEIGHT_PX = 12; 
 
-function useIsDark() {
-  const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
-    const compute = () => {
-      const explicitDark = root.classList.contains('theme-dark') || body.classList.contains('theme-dark');
-      const explicitLight = root.classList.contains('theme-light') || body.classList.contains('theme-light');
-      if (explicitDark) return true;
-      if (explicitLight) return false;
-      return !!mql?.matches;
-    };
-    const update = () => setIsDark(compute());
-    update();
-    const mo = new MutationObserver(update);
-    mo.observe(root, { attributes: true, attributeFilter: ['class'] });
-    mo.observe(body, { attributes: true, attributeFilter: ['class'] });
-    const onChange = () => setIsDark(compute());
-    mql?.addEventListener?.('change', onChange);
-    return () => {
-      mo.disconnect();
-      mql?.removeEventListener?.('change', onChange);
-    };
-  }, []);
-  return isDark;
-}
-
 export default function ShaderSurface() {
   const { showDragon, showFlags, showParticles, showClouds, showBuddha, showStupa, isMobile, deviceReady } = useShaderScene();
   const pathname = usePathname();
-  const isDark = useIsDark();
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pipelineRef = useRef<Pipeline | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -265,38 +235,7 @@ export default function ShaderSurface() {
   
       {mounted && !isMobile && (
         <>
-          <div
-            style={{
-              position: 'fixed',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 20,
-              background: isDark
-                ? 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0))'
-                : 'linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0))',
-              zIndex: 1,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}
-          />
-  
-          {/* <div
-            className={`${m.className} ui-text`}
-            style={{
-              position: 'fixed',
-              left: 12,
-              bottom: 5,
-              fontSize: 10,
-              lineHeight: 1,
-              zIndex: 2,
-              pointerEvents: 'none',
-              userSelect: 'none',
-              fontWeight: 300,
-            }}
-          >
-            © 2025 The Bhutan Treasury Company. All Rights Reserved.
-          </div> */}
+          <div className="ui-bottom-fade" />
   
           <div
             className={`${m.className} ui-text`}
@@ -384,6 +323,7 @@ export default function ShaderSurface() {
             style={{
               position: 'fixed',
               top: 10,
+              right: 12, 
               left: 12,
               display: 'flex',
               alignItems: 'center',
@@ -454,9 +394,9 @@ export default function ShaderSurface() {
               onMouseLeave={() => setHoverTop(s => ({ ...s, invert: false }))}
               style={{
                 background: 'transparent',
+                marginLeft: 'auto',
                 border: 'none',
                 padding: 0,
-                margin: 0,
                 fontSize: 15,
                 lineHeight: 1,
                 cursor: 'pointer',

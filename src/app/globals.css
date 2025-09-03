@@ -1,5 +1,35 @@
-:root { color-scheme: light dark; }
-* { box-sizing: border-box; }
+:root { 
+  color-scheme: light dark;
+
+  --fg-light: #000000;
+  --fg-dark:  #909090;
+  --bg-light: #ffffff;
+  --bg-dark:  #000000;
+
+  --fg: var(--fg-light);
+  --bg: var(--bg-light);
+  --bg-rgb: 255 255 255; 
+  --ui-fade-strength: 0.9; 
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: var(--fg-dark);
+    --bg: var(--bg-dark);
+    --bg-rgb: 0 0 0;
+  }
+}
+
+body.theme-light {
+  --fg: var(--fg-light);
+  --bg: var(--bg-light);
+  --bg-rgb: 255 255 255;
+}
+body.theme-dark {
+  --fg: var(--fg-dark);
+  --bg: var(--bg-dark);
+  --bg-rgb: 0 0 0;
+}
 
 html, body {
   height: 100%;
@@ -7,38 +37,14 @@ html, body {
   overflow: hidden;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: auto;
-}
-
-:root {
-  --fg-light: #000000;
-  --fg-dark:  #909090;
-  --bg-light: #ffffff;
-  --bg-dark:  #000000;
-}
-
-body.theme-light {
-  --fg: var(--fg-light);
-  --bg: var(--bg-light);
   background: var(--bg);
   color: var(--fg);
 }
 
-body.theme-dark {
-  --fg: var(--fg-dark);
-  --bg: var(--bg-dark);
-  background: var(--bg);
-  color: var(--fg);
-}
-
-.full-viewport {
-  width: 100vw;
-  min-height: 100vh;
-  height: 100dvh;
-}
-html, body { overflow: hidden; }
-
-* { scrollbar-width: none; }
+* { box-sizing: border-box; scrollbar-width: none; }
 *::-webkit-scrollbar { width: 0; height: 0; }
+
+.full-viewport { width: 100vw; min-height: 100vh; height: 100dvh; }
 
 .page-text, .ui-text { color: var(--fg); }
 .page-link, .ui-link { color: var(--fg); text-decoration: none; }
@@ -46,6 +52,18 @@ html, body { overflow: hidden; }
 .ui-link--no-underline,
 .ui-link--no-underline:hover,
 .ui-link--no-underline:focus,
-.ui-link--no-underline:focus-visible {
-  text-decoration: none !important;
+.ui-link--no-underline:focus-visible { text-decoration: none !important; }
+
+.ui-bottom-fade {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 20px;
+  background: linear-gradient(
+    to top,
+    rgb(var(--bg-rgb) / var(--ui-fade-strength)),
+    rgb(var(--bg-rgb) / 0)
+  );
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
 }
