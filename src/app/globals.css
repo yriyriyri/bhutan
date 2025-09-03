@@ -43,3 +43,9 @@ html, body { overflow: hidden; }
 .page-text, .ui-text { color: var(--fg); }
 .page-link, .ui-link { color: var(--fg); text-decoration: none; }
 .ui-link:hover, .page-link:hover { text-decoration: underline; }
+.ui-link--no-underline,
+.ui-link--no-underline:hover,
+.ui-link--no-underline:focus,
+.ui-link--no-underline:focus-visible {
+  text-decoration: none !important;
+}

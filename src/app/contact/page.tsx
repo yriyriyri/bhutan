@@ -70,7 +70,7 @@ export default function ContactPage() {
             lineHeight: 1,
             textDecoration: 'none',
             cursor: 'default',
-            pointerEvents: 'auto', // make the button clickable
+            pointerEvents: 'auto', 
           }}
         >
           {'<'}
@@ -88,7 +88,7 @@ export default function ContactPage() {
         style={{
           userSelect: 'text',
           cursor: 'pointer',
-          pointerEvents: 'auto', // clickable even though parent is none
+          pointerEvents: 'auto',
           textDecoration: hover ? 'underline' : 'none',
           textUnderlineOffset: '2px',
         }}

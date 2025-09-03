@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Roboto_Mono } from 'next/font/google';
+import { Roboto_Mono, Workbench } from 'next/font/google';
 
 const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
+const wb = Workbench({ subsets: ['latin'], weight: '400' });
 
 type Props = {
   href?: string;
@@ -168,16 +169,17 @@ export default function BrandTypewriterLink({
     <Link
       href={href}
       aria-label={ariaLabel}
-      className={`${m.className} ${className ?? ''}`}
+      className={`${wb.className} ${className ?? ''}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
         cursor: 'pointer',
         textDecoration: underlineOnHover && hover ? 'underline' : 'none',
         textUnderlineOffset: '2px',
-        fontWeight: active ? 400 : 300,
+        fontWeight: active ? 400 : 400,
         whiteSpace: 'nowrap',
         ...style,
+        letterSpacing: '0.25em'
       }}
     >
       {display}

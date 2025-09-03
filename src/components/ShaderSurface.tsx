@@ -7,12 +7,13 @@ import { createPipeline as createDesktopPipeline, type Pipeline } from '../lib/g
 import { createPipeline as createMobilePipeline } from '../lib/graphics/mobilePipeline';
 import { useShaderScene } from './ShaderSceneContext';
 import { usePathname } from 'next/navigation';
-import { Roboto_Mono } from 'next/font/google';
+import { Roboto_Mono, Workbench } from 'next/font/google';
 import PixelateLinkImage from './PixelateLinkImage';
 import BrandTypewriterLink from './BrandTypewriterLink'
 
 
 const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
+const wb = Workbench({ subsets: ['latin'], weight: '400' });
 const HOME_IMG_HEIGHT_PX = 12; 
 
 function useIsDark() {
@@ -379,7 +380,7 @@ export default function ShaderSurface() {
           </div>
   
           <div
-            className={`${m.className} ui-text`}
+            className={`${wb.className} ui-text`}
             style={{
               position: 'fixed',
               top: 10,
@@ -392,28 +393,40 @@ export default function ShaderSurface() {
               zIndex: 2,
               pointerEvents: 'auto',
               userSelect: 'none',
+              letterSpacing: '0.25em',
             }}
           >
-
-            <BrandTypewriterLink
-              href="/"
-              className="ui-link"
-              active={pathname === '/'}
-              stepMs={10} 
-            />
+            <span
+              onMouseEnter={() => setHoverTop(s => ({ ...s, btc: true }))}
+              onMouseLeave={() => setHoverTop(s => ({ ...s, btc: false }))}
+              style={{
+                display: 'inline-flex',
+                opacity: pathname === '/' || hoverTop.btc ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
+              }}
+            >
+              <BrandTypewriterLink
+                href="/"
+                className="ui-link"
+                active={pathname === '/'}
+                stepMs={10}
+                style={{ fontWeight: 400 }}
+                underlineOnHover={false}
+              />
+            </span>
 
             <span aria-hidden="true" style={{ pointerEvents: 'none' }}>-</span>
 
             <Link
               href="/about"
-              className="ui-link"
+              className="ui-link ui-link--no-underline"
               onMouseEnter={() => setHoverTop(s => ({ ...s, about: true }))}
               onMouseLeave={() => setHoverTop(s => ({ ...s, about: false }))}
               style={{
-                textDecoration: hoverTop.about ? 'underline' : 'none',
-                textUnderlineOffset: '2px',
                 cursor: 'pointer',
-                fontWeight: pathname === '/about' ? 400 : 300,
+                opacity: pathname === '/about' || hoverTop.about ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
+                fontWeight: 400,
               }}
             >
               about
@@ -421,21 +434,21 @@ export default function ShaderSurface() {
 
             <Link
               href="/team"
-              className="ui-link"
+              className="ui-link ui-link--no-underline"
               onMouseEnter={() => setHoverTop(s => ({ ...s, leadership: true }))}
               onMouseLeave={() => setHoverTop(s => ({ ...s, leadership: false }))}
               style={{
-                textDecoration: hoverTop.leadership ? 'underline' : 'none',
-                textUnderlineOffset: '2px',
                 cursor: 'pointer',
-                fontWeight: pathname === '/team' ? 400 : 300,
+                opacity: pathname === '/team' || hoverTop.leadership ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
+                fontWeight: 400,
               }}
             >
               team
             </Link>
 
             <button
-              className={`${m.className} ui-link`}
+              className={`${wb.className} ui-link ui-link--no-underline`}
               onClick={toggleInvertUI}
               onMouseEnter={() => setHoverTop(s => ({ ...s, invert: true }))}
               onMouseLeave={() => setHoverTop(s => ({ ...s, invert: false }))}
@@ -447,9 +460,10 @@ export default function ShaderSurface() {
                 fontSize: 15,
                 lineHeight: 1,
                 cursor: 'pointer',
-                textDecoration: hoverTop.invert ? 'underline' : 'none',
-                textUnderlineOffset: '2px',
-                fontWeight: 300,
+                opacity: hoverTop.invert ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
+                fontWeight: 400,
+                letterSpacing: '0.25em',
               }}
             >
               invert

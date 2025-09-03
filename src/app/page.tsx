@@ -32,8 +32,8 @@ export default function HomePage() {
   useEffect(() => {
     setShowDragon(true);
     setShowFlags(false);
-    setShowClouds(true);
-    setShowParticles(false);
+    setShowClouds(false);
+    setShowParticles(true);
     setShowBuddha(false);
     setShowStupa(false);
   }, [setShowDragon, setShowFlags, setShowClouds, setShowParticles, setShowBuddha]);

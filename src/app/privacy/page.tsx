@@ -50,7 +50,7 @@ export default function ContactPage() {
         style={{
           maxWidth: '50vw',
           textAlign: 'center',
-          fontSize: 12,
+          fontSize: 11,
           lineHeight: 1.3,
           fontWeight: 300,
           userSelect: 'text',

@@ -501,11 +501,11 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   foregroundClouds.blendMode = 'normal';
   foregroundClouds.setBlackKey({ low: 0.005, high: 0.01 });
 
-  const buddha = new PublicVideoLayer('buddha', renderer, '/buddha.mp4');
-  buddha.zIndex = 2.5;
-  buddha.opacity = 1.0;
-  buddha.blendMode = 'normal';
-  buddha.setWhiteKey({ low: 0.98, high: 0.99 });
+  // const buddha = new PublicVideoLayer('buddha', renderer, '/buddha.mp4');
+  // buddha.zIndex = 2.5;
+  // buddha.opacity = 1.0;
+  // buddha.blendMode = 'normal';
+  // buddha.setWhiteKey({ low: 0.98, high: 0.99 });
 
   const stupa = new PublicVideoLayer('stupa', renderer, '/stupa.mp4');
   stupa.zIndex = 2.5;
@@ -513,7 +513,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
   stupa.blendMode = 'normal';
   stupa.setWhiteKey({ low: 0.98, high: 0.99 });
 
-  const prayer = new TopAnchoredPublicVideoLayer('prayer', renderer, '/prayer.mp4');
+  const prayer = new BottomAnchoredPublicVideoLayer('prayer', renderer, '/newprayer.mp4');
   prayer.zIndex = 3;
   prayer.opacity = 1.0;
   prayer.blendMode = 'normal';
@@ -532,7 +532,7 @@ export function createPipeline(renderer: THREE.WebGLRenderer): Pipeline {
     minRateBaseline: 0 
   });
   
-  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds, buddha, stupa, prayer);
+  layers.push(dragon,flag, backgroundFlag, particles, clouds, foregroundClouds, stupa, prayer);
 
   const asciiPass = new FinalPass(ASCII_FINAL_FRAG);
   const plainPass = new FinalPass(PASSTHROUGH_FINAL_FRAG);
