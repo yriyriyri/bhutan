@@ -384,7 +384,7 @@ export default function ShaderSurface() {
             style={{
               position: 'fixed',
               top: 10,
-              right: 12,
+              left: 12,
               display: 'flex',
               alignItems: 'center',
               gap: 30,
