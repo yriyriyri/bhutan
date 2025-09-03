@@ -357,7 +357,7 @@ export default function ShaderSurface() {
               zIndex: 2,
               pointerEvents: 'auto',
               userSelect: 'none',
-              letterSpacing: '0.25em',
+              letterSpacing: '0.4em',
             }}
           >
             <span
@@ -393,7 +393,7 @@ export default function ShaderSurface() {
                 fontWeight: 400,
               }}
             >
-              about
+              ABOUT
             </Link>
 
             <Link
@@ -408,7 +408,7 @@ export default function ShaderSurface() {
                 fontWeight: 400,
               }}
             >
-              leadership
+              LEADERSHIP
             </Link>
 
             {/* <button

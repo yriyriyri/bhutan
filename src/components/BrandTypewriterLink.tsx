@@ -179,7 +179,7 @@ export default function BrandTypewriterLink({
         fontWeight: active ? 400 : 400,
         whiteSpace: 'nowrap',
         ...style,
-        letterSpacing: '0.25em'
+        letterSpacing: '0.4em'
       }}
     >
       {display}
