@@ -425,7 +425,7 @@ export default function ShaderSurface() {
               basePath="coin_"
               frameCount={20}
               pad={4}
-              fps={30}
+              fps={40}
               sizePx={30}
             />
           </div>
