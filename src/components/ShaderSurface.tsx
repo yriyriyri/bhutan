@@ -267,6 +267,8 @@ export default function ShaderSurface() {
                 textUnderlineOffset: '2px',
                 cursor: 'pointer',
                 fontWeight: pathname === '/contact' ? 400 : 300,
+                opacity: pathname === '/contact' || hoverTop.contact ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
               }}
             >
               contact
@@ -282,6 +284,8 @@ export default function ShaderSurface() {
                 textUnderlineOffset: '2px',
                 cursor: 'pointer',
                 fontWeight: pathname === '/legal' ? 400 : 300,
+                opacity: pathname === '/legal' || hoverTop.legal ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
               }}
             >
               legal
@@ -297,6 +301,8 @@ export default function ShaderSurface() {
                 textUnderlineOffset: '2px',
                 cursor: 'pointer',
                 fontWeight: pathname === '/terms' ? 400 : 300,
+                opacity: pathname === '/terms' || hoverTop.terms ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
               }}
             >
               terms of use
@@ -312,6 +318,8 @@ export default function ShaderSurface() {
                 textUnderlineOffset: '2px',
                 cursor: 'pointer',
                 fontWeight: pathname === '/privacy' ? 400 : 300,
+                opacity: pathname === '/privacy' || hoverTop.privacy ? 1 : 0.6,
+                transition: 'opacity 120ms linear',
               }}
             >
               privacy notice
