@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import { Roboto_Mono, Workbench } from 'next/font/google';
 import PixelateLinkImage from './PixelateLinkImage';
 import BrandTypewriterLink from './BrandTypewriterLink'
+import InvertLogoButton from './InvertLogoButton';
 
 
 const m = Roboto_Mono({ weight: ['300','400'], subsets: ['latin'] });
@@ -253,7 +254,7 @@ export default function ShaderSurface() {
               gap: 18,
             }}
           >
-            <span style={{ marginRight: 48 }}>
+            <span style={{ marginRight: 48, opacity: 0.6, }}>
               © 2025 The Bhutan Treasury Company. All Rights Reserved.
             </span>
 
@@ -395,7 +396,7 @@ export default function ShaderSurface() {
               team
             </Link>
 
-            <button
+            {/* <button
               className={`${wb.className} ui-link ui-link--no-underline`}
               onClick={toggleInvertUI}
               onMouseEnter={() => setHoverTop(s => ({ ...s, invert: true }))}
@@ -415,7 +416,18 @@ export default function ShaderSurface() {
               }}
             >
               invert
-            </button>
+            </button> */}
+            <InvertLogoButton
+              onToggle={toggleInvertUI}
+              className={`${wb.className} ui-link ui-link--no-underline`}
+              style={{ marginLeft: 'auto' }}
+              folder="/coin"
+              basePath="coin_"
+              frameCount={11}
+              pad={4}
+              fps={30}
+              sizePx={30}
+            />
           </div>
         </>
       )}
