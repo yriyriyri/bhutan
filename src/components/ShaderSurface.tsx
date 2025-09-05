@@ -379,7 +379,7 @@ export default function ShaderSurface() {
               />
             </span>
 
-            <span aria-hidden="true" style={{ pointerEvents: 'none' }}>-</span>
+            <span aria-hidden="true" style={{ pointerEvents: 'none', opacity: 0.6 }}>-</span>
 
             <Link
               href="/about"
